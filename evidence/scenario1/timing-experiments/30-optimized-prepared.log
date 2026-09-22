@@ -1,0 +1,36 @@
+########## experiment: MODE=optimized ##########
+recovery point=video-stream-rg-epoch-12
+prepared: target deployment replicas=0
+mode=optimized  evidence -> /home/ubuntu/ramp/evidence/scenario1/recovery-20260922T052842
+{"session": "82e53f78-fcdc-462a-9b2e-0597e0a04d3e", "position": 31, "frames_decoded": 930, "frames_per_tick": 30, "ring_head": "b454ba55953f", "redis_linked": true, "uptime_s": 31.9, "ts": 1790054922.0197916}
+T_failure=2026-09-22T05:28:42+00:00 epoch=1790054922.031
+T_failure_complete=2026-09-22T05:29:13+00:00 epoch=1790054953.550
+T_recovery_start=2026-09-22T05:29:13+00:00 epoch=1790054953.561
+T_redis_ready=2026-09-22T05:29:14+00:00 epoch=1790054954.032
+T_git_committed=2026-09-22T05:29:15+00:00 epoch=1790054955.343
+T_argocd_applied=2026-09-22T05:29:16+00:00 epoch=1790054956.045
+T_pod_ready=2026-09-22T05:29:19+00:00 epoch=1790054959.791
+T_app_ready=2026-09-22T05:29:21+00:00 epoch=1790054961.376
+RecoveryPoint video-stream-rg-epoch-12: instance=82e53f78-fcdc-462a-9b2e-0597e0a04d3e position=5
+  PASS  VideoServing            endpoint answers with valid state
+  PASS  InstanceRestored        session 82e53f78-fcdc-462a-9b2e-0597e0a04d3e matches the checkpoint
+  PASS  ResumedFromCheckpoint   position 71 >= checkpoint position 5
+  PASS  DecodeInvariant         frames_decoded=2130 == position*30
+  PASS  StreamAdvancing         position 71 -> 74 over 3s
+  PASS  RedisPrimaryRole        redis at 192.168.28.122:30380 is master
+  PASS  DistributedConsistency  video=74 redis=74 skew=0 (<= 3)
+  PASS  WriteDatapath           redis session key written by the restored instance
+  PASS  RedisLinkUp             restored video is connected to redis
+verdict: GROUP-HEALTHY (9 passed, 0 failed)
+
+===== RECOVERY BREAKDOWN =====
+  failure detection window           31.5s
+  redis promotion                    0.5s
+  git commit (activate)              1.3s
+  argocd sync + apply                0.7s
+  pod ready (restore)                3.7s
+  pod ready -> APPLICATION ready     1.6s
+    (of which: probe dwell)          1.0s
+  ----------------------------------
+  RTO to pod ready                   6.2s
+  RTO to APPLICATION ready           7.8s

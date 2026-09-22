@@ -1,0 +1,40 @@
+# The recovery-consistency domain.
+#
+# Note what is NOT here: the redis-service and video-service AppBundle
+# components. They are part of the application's deployment structure, but
+# recovering them independently cannot violate correctness -- they are
+# reconstructed, not recovered. They appear as RecoveryPath prerequisites
+# instead. AppBundle != RecoveryGroup.
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryGroup
+metadata:
+  name: video-stream-rg
+  namespace: default
+spec:
+  appBundleRef:
+    name: video-stream-service
+    namespace: ramp-demo
+    cluster: workload01
+
+  members:
+    # Redis recovers by its OWN native mechanism. It is deliberately NOT
+    # checkpointed just because the video member is.
+    - name: redis
+      componentRef: {group: data, component: redis}
+      recoveryDriver: redis-replication
+      sourceEndpoint:
+        host: 192.168.28.238   # workload01 NodePort via floating IP
+        port: 30379
+      consistencyKeys:
+        - ramp:video:position
+
+    # Video recovers by container/runtime checkpoint: its decode state lives in
+    # process memory and no replication mechanism can reproduce it.
+    - name: video
+      componentRef: {group: streaming, component: video}
+      recoveryDriver: container-checkpoint
+      container: video
+
+  recoveryContract:
+    rto: 60s
+    rpo: 5s

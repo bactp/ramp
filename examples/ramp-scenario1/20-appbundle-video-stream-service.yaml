@@ -1,0 +1,151 @@
+apiVersion: app.example.com/v1alpha1
+kind: AppBundle
+metadata:
+  name: video-stream-service
+  namespace: ramp-demo
+  labels:
+    ramp.dcn.ssu.ac.kr/scenario: '1'
+spec:
+  dependencies:
+  - from: data
+    to: streaming
+    type: strict
+  groups:
+  - name: data
+    order: 0
+    components:
+    - name: redis
+      order: 0
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: redis-primary
+          namespace: ramp-demo
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: redis-primary
+          template:
+            metadata:
+              labels:
+                app: redis-primary
+                ramp.dcn.ssu.ac.kr/role: redis-primary
+            spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: DoesNotExist
+              containers:
+              - name: redis
+                image: redis:7-alpine
+                args:
+                - --save
+                - ''
+                - --appendonly
+                - 'no'
+                - --protected-mode
+                - 'no'
+                - --repl-diskless-sync
+                - 'yes'
+                - --repl-diskless-sync-delay
+                - '0'
+                ports:
+                - containerPort: 6379
+                  name: redis
+                readinessProbe:
+                  tcpSocket:
+                    port: 6379
+                  initialDelaySeconds: 2
+                  periodSeconds: 5
+    - name: redis-service
+      order: 1
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: redis
+          namespace: ramp-demo
+        spec:
+          type: NodePort
+          selector:
+            app: redis-primary
+          ports:
+          - port: 6379
+            targetPort: 6379
+            nodePort: 30379
+            name: redis
+  - name: streaming
+    order: 1
+    components:
+    - name: video
+      order: 0
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: video-session
+          namespace: ramp-demo
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: video-session
+          template:
+            metadata:
+              labels:
+                app: video-session
+                ramp.dcn.ssu.ac.kr/role: video
+            spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: DoesNotExist
+              containers:
+              - name: video
+                image: python:3.12-slim
+                env:
+                - name: REDIS_HOST
+                  value: redis.ramp-demo.svc.cluster.local
+                - name: REDIS_PORT
+                  value: '6379'
+                - name: FRAMES_PER_TICK
+                  value: '30'
+                command:
+                - python3
+                - -u
+                - -c
+                args:
+                - "import socket, select, time, os, json, uuid, hashlib, collections\n\nHOST = os.environ.get(\"REDIS_HOST\", \"redis\")\nPORT = int(os.environ.get(\"REDIS_PORT\", \"6379\"))\nFPT  = int(os.environ.get(\"FRAMES_PER_TICK\", \"30\"))\nPOS_KEY, SESS_KEY = \"ramp:video:position\", \"ramp:video:session\"\nSTATE = \"/tmp/ramp-video-state.json\"\n\ndef resp(*args):\n    out = (\"*%d\\r\\n\" % len(args)).encode()\n    for a in args:\n        b = str(a).encode()\n        out += b\"$%d\\r\\n\" % len(b) + b + b\"\\r\\n\"\n    s = socket.create_connection((HOST, PORT), timeout=3)\n    try:\n        s.sendall(out)\n        reply = s.recv(65536)\n    finally:\n        s.close()\n    # A RESP error is a reply, not a socket failure. Catching only exceptions\n    # made a replica rejecting writes with \"-READONLY ...\" look like a healthy\n    # link, which is exactly the state a half-failed recovery leaves behind.\n    if reply.startswith(b\"-\"):\n        raise RuntimeError(reply.split(b\"\\r\\n\")[0][1:].decode(errors=\"replace\"))\n    return reply\n\n# ---- in-memory ONLY: recoverable solely by container checkpoint -------------\nsession = str(uuid.uuid4())\nframes  = 0\nring    = collections.deque(maxlen=8)\nstarted = time.time()\n\n# ---- Redis-backed: recoverable solely by replication -----------------------\npos = 0\ntry:\n    r = resp(\"GET\", POS_KEY)\n    if r.startswith(b\"$\") and not r.startswith(b\"$-1\"):\n        pos = int(r.split(b\"\\r\\n\")[1]); frames = pos * FPT\n        print(\"resumed cold from redis pos=%d\" % pos, flush=True)\nexcept Exception as e:\n    print(\"redis unavailable at start: %s\" % e, flush=True)\n\n# Single-threaded: select() on the listening socket with a deadline, so the\n# stream ticks on time and requests are served in between. No threads and no\n# child processes keeps the CRIU dump as simple as possible.\nsrv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\nsrv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\nsrv.bind((\"0.0.0.0\", 8080)); srv.listen(16)\nprint(\"video-session up session=%s pos=%d frames=%d serving :8080\" % (session, pos, frames), flush=True)\n\nlinked = True\ndef snapshot():\n    return {\"session\": session, \"position\": pos, \"frames_decoded\": frames,\n            \"frames_per_tick\": FPT, \"ring_head\": ring[-1] if ring else None,\n            \"redis_linked\": linked, \"uptime_s\": round(time.time() - started, 1),\n            \"ts\": time.time()}\n\nnext_tick = time.time() + 1.0\nwhile True:\n    try:\n        r, _, _ = select.select([srv], [], [], max(0.0, next_tick - time.time()))\n    except Exception:\n        r = []\n    if r:\n        try:\n            conn, _ = srv.accept()\n            conn.settimeout(2)\n            try:\n                conn.recv(4096)\n                body = json.dumps(snapshot()).encode()\n                conn.sendall(b\"HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\n\"\n                             b\"Content-Length: \" + str(len(body)).encode() + b\"\\r\\n\"\n                             b\"Connection: close\\r\\n\\r\\n\" + body)\n            finally:\n                conn.close()\n        except Exception:\n            pass\n    if time.time() >= next_tick:\n        next_tick += 1.0\n        pos += 1; frames += FPT\n        ring.append(hashlib.sha256((\"%s:%d\" % (session, pos)).encode()).hexdigest()[:12])\n        linked = True\n        try:\n            resp(\"SET\", POS_KEY, pos); resp(\"SET\", SESS_KEY, session)\n        except Exception as e:\n            linked = False\n            print(\"redis write failed at pos=%d: %s\" % (pos, e), flush=True)\n        try:\n            open(STATE, \"w\").write(json.dumps(snapshot()))\n        except Exception:\n            pass\n        if pos % 30 == 0:\n            print(\"pos=%d frames=%d invariant_ok=%s linked=%s\"\n                  % (pos, frames, frames == pos * FPT, linked), flush=True)\n"
+                ports:
+                - containerPort: 8080
+                  name: http
+                readinessProbe:
+                  tcpSocket:
+                    port: 8080
+                  initialDelaySeconds: 2
+                  periodSeconds: 5
+    - name: video-service
+      order: 1
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: video-session
+          namespace: ramp-demo
+        spec:
+          type: NodePort
+          selector:
+            app: video-session
+          ports:
+          - port: 8080
+            targetPort: 8080
+            nodePort: 30808
+            name: http

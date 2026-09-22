@@ -1,0 +1,109 @@
+NAMESPACE         NAME                                                         READY   STATUS    RESTARTS      AGE    IP             NODE                             NOMINATED NODE   READINESS GATES
+argocd            pod/argocd-application-controller-0                          1/1     Running   1 (32d ago)   41d    10.244.1.70    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-applicationset-controller-6875877988-fxk2c        1/1     Running   1 (32d ago)   41d    10.244.1.66    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-dex-server-d78697999-k9smc                        1/1     Running   2 (32d ago)   41d    10.244.1.78    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-notifications-controller-5cd5d4d48b-mkk95         1/1     Running   1 (32d ago)   41d    10.244.1.94    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-redis-78f79c794b-rgcg2                            1/1     Running   1 (32d ago)   41d    10.244.1.89    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-repo-server-558b99864d-8vwx8                      1/1     Running   1 (32d ago)   41d    10.244.1.72    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+argocd            pod/argocd-server-5bbd9cb7f-6tfzb                            1/1     Running   1 (32d ago)   41d    10.244.1.62    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+default           pod/video-768db8fb67-cvcs9                                   1/1     Running   1 (32d ago)   39d    10.244.1.83    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/helm-controller-f7d644865-56h8f                          1/1     Running   1 (32d ago)   41d    10.244.1.86    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/image-automation-controller-6784678457-f94sd             1/1     Running   1 (32d ago)   41d    10.244.1.67    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/image-reflector-controller-74c846876b-kncw5              1/1     Running   1 (32d ago)   41d    10.244.1.97    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/kustomize-controller-784d5b7dfd-zpzs4                    1/1     Running   1 (32d ago)   41d    10.244.1.96    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/notification-controller-74f56474d6-sqbbx                 1/1     Running   1 (32d ago)   41d    10.244.1.75    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+flux-system       pod/source-controller-7d59567898-x9nrn                       1/1     Running   1 (32d ago)   41d    10.244.1.73    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-flannel      pod/kube-flannel-ds-wgrfl                                    1/1     Running   1 (32d ago)   41d    10.6.0.127     workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-flannel      pod/kube-flannel-ds-wqcls                                    1/1     Running   1 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/coredns-598c6c97db-6rccb                                 1/1     Running   1 (32d ago)   32d    10.244.1.77    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-system       pod/coredns-598c6c97db-mdqkk                                 1/1     Running   1 (32d ago)   32d    10.244.1.61    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-system       pod/etcd-workload02-control-plane-q5vlg                      1/1     Running   1 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/kube-apiserver-workload02-control-plane-q5vlg            1/1     Running   1 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/kube-controller-manager-workload02-control-plane-q5vlg   1/1     Running   1 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/kube-multus-ds-8xdb8                                     1/1     Running   5 (32d ago)   41d    10.6.0.127     workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-system       pod/kube-multus-ds-9tvcb                                     1/1     Running   5 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/kube-proxy-6nbk7                                         1/1     Running   0             27d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/kube-proxy-x4hsr                                         1/1     Running   0             27d    10.6.0.127     workload02-md-0-rx5mn-pjkrh      <none>           <none>
+kube-system       pod/kube-scheduler-workload02-control-plane-q5vlg            1/1     Running   1 (32d ago)   41d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+kube-system       pod/metrics-server-676dc447b9-zjmd6                          1/1     Running   1 (32d ago)   33d    10.244.1.74    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-attacher-5d68b48d9-72zsq                             1/1     Running   4 (32d ago)   41d    10.244.1.81    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-attacher-5d68b48d9-89pgl                             1/1     Running   4 (32d ago)   41d    10.244.1.95    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-attacher-5d68b48d9-jcg9m                             1/1     Running   5 (32d ago)   41d    10.244.1.82    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-provisioner-6fcc6478db-5bbnn                         1/1     Running   1 (32d ago)   41d    10.244.1.79    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-provisioner-6fcc6478db-5wsts                         1/1     Running   2 (32d ago)   41d    10.244.1.69    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-provisioner-6fcc6478db-z2qgc                         1/1     Running   3 (32d ago)   41d    10.244.1.88    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-resizer-6c558c9fbc-hrkjr                             1/1     Running   4 (32d ago)   41d    10.244.1.90    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-resizer-6c558c9fbc-p8x5w                             1/1     Running   1 (32d ago)   41d    10.244.1.80    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-resizer-6c558c9fbc-wmcw2                             1/1     Running   4 (32d ago)   41d    10.244.1.93    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-snapshotter-874b9f887-79xv6                          1/1     Running   2 (32d ago)   41d    10.244.1.63    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-snapshotter-874b9f887-c2k2b                          1/1     Running   2 (32d ago)   41d    10.244.1.65    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/csi-snapshotter-874b9f887-fnp5s                          1/1     Running   1 (32d ago)   41d    10.244.1.91    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/engine-image-ei-e09d8caa-6qjpf                           1/1     Running   1 (32d ago)   33d    10.244.0.227   workload02-control-plane-q5vlg   <none>           <none>
+longhorn-system   pod/engine-image-ei-e09d8caa-s7lcn                           1/1     Running   1 (32d ago)   41d    10.244.1.85    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/instance-manager-a8ab537db4adf389a137056896ba905f        1/1     Running   0             32d    10.244.1.98    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/instance-manager-f569f4d0eb18e2f1aab108691595134e        1/1     Running   0             32d    10.244.0.231   workload02-control-plane-q5vlg   <none>           <none>
+longhorn-system   pod/longhorn-csi-plugin-fkjcc                                3/3     Running   9 (32d ago)   33d    10.244.0.230   workload02-control-plane-q5vlg   <none>           <none>
+longhorn-system   pod/longhorn-csi-plugin-fqcb7                                3/3     Running   7 (32d ago)   41d    10.244.1.64    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/longhorn-driver-deployer-778c7b65cb-mjmd5                1/1     Running   1 (32d ago)   41d    10.244.1.87    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/longhorn-manager-7t2gb                                   2/2     Running   2 (32d ago)   33d    10.244.0.228   workload02-control-plane-q5vlg   <none>           <none>
+longhorn-system   pod/longhorn-manager-bs4hx                                   2/2     Running   4 (32d ago)   41d    10.244.1.76    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/longhorn-ui-77986cf87f-5b95v                             1/1     Running   1 (32d ago)   41d    10.244.1.92    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+longhorn-system   pod/longhorn-ui-77986cf87f-gzjf2                             1/1     Running   1 (32d ago)   41d    10.244.1.68    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+metallb-system    pod/controller-f7df876b5-g4c5m                               1/1     Running   1 (32d ago)   41d    10.244.1.60    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+metallb-system    pod/speaker-67fj5                                            4/4     Running   7 (27d ago)   33d    10.6.0.129     workload02-control-plane-q5vlg   <none>           <none>
+metallb-system    pod/speaker-9hr87                                            4/4     Running   4 (32d ago)   41d    10.6.0.127     workload02-md-0-rx5mn-pjkrh      <none>           <none>
+sregym            pod/mcp-server-fb49c99d8-mfvj8                               1/1     Running   0             30d    10.244.0.54    workload02-control-plane-q5vlg   <none>           <none>
+velero            pod/node-agent-7xp7l                                         1/1     Running   0             5d4h   10.244.1.10    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+velero            pod/node-agent-p5sf8                                         1/1     Running   0             5d4h   10.244.0.193   workload02-control-plane-q5vlg   <none>           <none>
+velero            pod/velero-688dbc9bf5-cf9lp                                  1/1     Running   0             5d4h   10.244.1.11    workload02-md-0-rx5mn-pjkrh      <none>           <none>
+
+NAMESPACE         NAME                                               READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS                         IMAGES                                                                     SELECTOR
+argocd            deployment.apps/argocd-applicationset-controller   1/1     1            1           41d   argocd-applicationset-controller   quay.io/argoproj/argocd:v2.10.17                                           app.kubernetes.io/name=argocd-applicationset-controller
+argocd            deployment.apps/argocd-dex-server                  1/1     1            1           41d   dex                                ghcr.io/dexidp/dex:v2.37.0                                                 app.kubernetes.io/name=argocd-dex-server
+argocd            deployment.apps/argocd-notifications-controller    1/1     1            1           41d   argocd-notifications-controller    quay.io/argoproj/argocd:v2.10.17                                           app.kubernetes.io/name=argocd-notifications-controller
+argocd            deployment.apps/argocd-redis                       1/1     1            1           41d   redis                              redis:7.0.15-alpine                                                        app.kubernetes.io/name=argocd-redis
+argocd            deployment.apps/argocd-repo-server                 1/1     1            1           41d   argocd-repo-server                 quay.io/argoproj/argocd:v2.10.17                                           app.kubernetes.io/name=argocd-repo-server
+argocd            deployment.apps/argocd-server                      1/1     1            1           41d   argocd-server                      quay.io/argoproj/argocd:v2.10.17                                           app.kubernetes.io/name=argocd-server
+default           deployment.apps/video                              1/1     1            1           39d   vlc                                docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest   app=video
+flux-system       deployment.apps/helm-controller                    1/1     1            1           41d   manager                            ghcr.io/fluxcd/helm-controller:v1.3.0                                      app=helm-controller
+flux-system       deployment.apps/image-automation-controller        1/1     1            1           41d   manager                            ghcr.io/fluxcd/image-automation-controller:v0.41.0                         app=image-automation-controller
+flux-system       deployment.apps/image-reflector-controller         1/1     1            1           41d   manager                            ghcr.io/fluxcd/image-reflector-controller:v0.35.1                          app=image-reflector-controller
+flux-system       deployment.apps/kustomize-controller               1/1     1            1           41d   manager                            ghcr.io/fluxcd/kustomize-controller:v1.6.0                                 app=kustomize-controller
+flux-system       deployment.apps/notification-controller            1/1     1            1           41d   manager                            ghcr.io/fluxcd/notification-controller:v1.6.0                              app=notification-controller
+flux-system       deployment.apps/source-controller                  1/1     1            1           41d   manager                            ghcr.io/fluxcd/source-controller:v1.6.0                                    app=source-controller
+kube-system       deployment.apps/coredns                            2/2     2            2           41d   coredns                            registry.k8s.io/coredns/coredns:v1.11.3                                    k8s-app=kube-dns
+kube-system       deployment.apps/metrics-server                     1/1     1            1           33d   metrics-server                     registry.k8s.io/metrics-server/metrics-server:v0.9.0                       k8s-app=metrics-server
+longhorn-system   deployment.apps/csi-attacher                       3/3     3            3           41d   csi-attacher                       longhornio/csi-attacher:v4.8.1                                             app=csi-attacher
+longhorn-system   deployment.apps/csi-provisioner                    3/3     3            3           41d   csi-provisioner                    longhornio/csi-provisioner:v5.2.0                                          app=csi-provisioner
+longhorn-system   deployment.apps/csi-resizer                        3/3     3            3           41d   csi-resizer                        longhornio/csi-resizer:v1.13.2                                             app=csi-resizer
+longhorn-system   deployment.apps/csi-snapshotter                    3/3     3            3           41d   csi-snapshotter                    longhornio/csi-snapshotter:v8.2.0                                          app=csi-snapshotter
+longhorn-system   deployment.apps/longhorn-driver-deployer           1/1     1            1           41d   longhorn-driver-deployer           longhornio/longhorn-manager:v1.9.0                                         app=longhorn-driver-deployer
+longhorn-system   deployment.apps/longhorn-ui                        2/2     2            2           41d   longhorn-ui                        longhornio/longhorn-ui:v1.9.0                                              app=longhorn-ui
+metallb-system    deployment.apps/controller                         1/1     1            1           41d   controller                         quay.io/metallb/controller:v0.14.9                                         app=metallb,component=controller
+sregym            deployment.apps/mcp-server                         1/1     1            1           33d   mcp-server                         phuongbac/sregym-mcp:latest                                                app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=mcp-server,app.kubernetes.io/part-of=sregym
+velero            deployment.apps/velero                             1/1     1            1           41d   velero                             velero/velero:v1.16.0                                                      app.kubernetes.io/instance=velero,app.kubernetes.io/name=velero
+
+NAMESPACE         NAME                                              TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE   SELECTOR
+argocd            service/argocd-applicationset-controller          ClusterIP   10.105.29.212    <none>        7000/TCP,8080/TCP            41d   app.kubernetes.io/name=argocd-applicationset-controller
+argocd            service/argocd-dex-server                         ClusterIP   10.104.167.217   <none>        5556/TCP,5557/TCP,5558/TCP   41d   app.kubernetes.io/name=argocd-dex-server
+argocd            service/argocd-metrics                            ClusterIP   10.100.21.12     <none>        8082/TCP                     41d   app.kubernetes.io/name=argocd-application-controller
+argocd            service/argocd-notifications-controller-metrics   ClusterIP   10.107.132.85    <none>        9001/TCP                     41d   app.kubernetes.io/name=argocd-notifications-controller
+argocd            service/argocd-redis                              ClusterIP   10.103.213.58    <none>        6379/TCP                     41d   app.kubernetes.io/name=argocd-redis
+argocd            service/argocd-repo-server                        ClusterIP   10.98.202.146    <none>        8081/TCP,8084/TCP            41d   app.kubernetes.io/name=argocd-repo-server
+argocd            service/argocd-server                             NodePort    10.109.82.48     <none>        80:32102/TCP,443:32103/TCP   41d   app.kubernetes.io/name=argocd-server
+argocd            service/argocd-server-metrics                     ClusterIP   10.109.252.244   <none>        8083/TCP                     41d   app.kubernetes.io/name=argocd-server
+default           service/kubernetes                                ClusterIP   10.96.0.1        <none>        443/TCP                      41d   <none>
+default           service/video-service                             NodePort    10.97.2.155      <none>        8080:30080/TCP               39d   app=video
+flux-system       service/notification-controller                   ClusterIP   10.107.180.29    <none>        80/TCP                       41d   app=notification-controller
+flux-system       service/source-controller                         ClusterIP   10.101.62.153    <none>        80/TCP                       41d   app=source-controller
+flux-system       service/webhook-receiver                          ClusterIP   10.109.222.46    <none>        80/TCP                       41d   app=notification-controller
+kube-system       service/kube-dns                                  ClusterIP   10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP       41d   k8s-app=kube-dns
+kube-system       service/metrics-server                            ClusterIP   10.111.246.109   <none>        443/TCP                      33d   k8s-app=metrics-server
+longhorn-system   service/longhorn-admission-webhook                ClusterIP   10.96.7.170      <none>        9502/TCP                     41d   longhorn.io/admission-webhook=longhorn-admission-webhook
+longhorn-system   service/longhorn-backend                          ClusterIP   10.106.157.229   <none>        9500/TCP                     41d   app=longhorn-manager
+longhorn-system   service/longhorn-conversion-webhook               ClusterIP   10.99.14.166     <none>        9501/TCP                     41d   longhorn.io/conversion-webhook=longhorn-conversion-webhook
+longhorn-system   service/longhorn-frontend                         ClusterIP   10.99.240.203    <none>        80/TCP                       41d   app=longhorn-ui
+longhorn-system   service/longhorn-recovery-backend                 ClusterIP   10.97.44.76      <none>        9503/TCP                     41d   longhorn.io/recovery-backend=longhorn-recovery-backend
+metallb-system    service/metallb-webhook-service                   ClusterIP   10.110.85.144    <none>        443/TCP                      41d   component=controller
+sregym            service/mcp-server                                NodePort    10.108.115.86    <none>        9954:31954/TCP               33d   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=mcp-server,app.kubernetes.io/part-of=sregym
+velero            service/velero                                    ClusterIP   10.104.204.167   <none>        8085/TCP                     41d   app.kubernetes.io/instance=velero,app.kubernetes.io/name=velero,name=velero

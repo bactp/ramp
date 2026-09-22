@@ -1,0 +1,278 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: recoverypoints.ramp.dcn.ssu.ac.kr
+spec:
+  group: ramp.dcn.ssu.ac.kr
+  names:
+    kind: RecoveryPoint
+    listKind: RecoveryPointList
+    plural: recoverypoints
+    shortNames:
+    - rp
+    singular: recoverypoint
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.recoveryGroupRef
+      name: Group
+      type: string
+    - jsonPath: .spec.epoch
+      name: Epoch
+      type: integer
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.validation.validated
+      name: Validated
+      type: boolean
+    - jsonPath: .status.validation.observedSkew
+      name: Skew
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          RecoveryPoint is a committed set of mutually consistent recovery states for
+          a RecoveryGroup, produced by one Recovery Epoch.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RecoveryPointSpec defines one Recovery Epoch to be executed.
+            properties:
+              barrierTimeoutSeconds:
+                default: 30
+                description: BarrierTimeoutSeconds bounds the QUIESCE/BARRIER stage.
+                format: int32
+                type: integer
+              captureTimeoutSeconds:
+                default: 300
+                description: |-
+                  CaptureTimeoutSeconds bounds the CAPTURE stage (including artifact
+                  landing in the shared artifact store).
+                format: int32
+                type: integer
+              epoch:
+                description: Epoch is the monotonically increasing epoch number.
+                format: int64
+                type: integer
+              maxPositionSkew:
+                default: 2
+                description: |-
+                  MaxPositionSkew is the largest tolerated difference, in application
+                  logical positions, between the container-checkpoint member's captured
+                  in-memory position and the Redis-committed position. This is the
+                  cross-driver consistency tolerance that makes the epoch meaningful.
+                format: int64
+                type: integer
+              recoveryGroupRef:
+                description: RecoveryGroupRef is the group this epoch captures.
+                type: string
+            required:
+            - epoch
+            - recoveryGroupRef
+            type: object
+          status:
+            description: RecoveryPointStatus is the observed state of a Recovery Epoch.
+            properties:
+              artifacts:
+                items:
+                  description: |-
+                    RecoveryArtifact is one member's captured recovery state. Artifacts within a
+                    RecoveryPoint are heterogeneous by design.
+                  properties:
+                    capturedAt:
+                      format: date-time
+                      type: string
+                    driver:
+                      description: |-
+                        RecoveryDriver names the recovery mechanism bound to a member. Different
+                        members of the same RecoveryGroup deliberately use different drivers -- that
+                        heterogeneity is the property Scenario 1 exists to demonstrate.
+                      type: string
+                    instanceFingerprint:
+                      description: |-
+                        InstanceFingerprint identifies the specific process instance whose state
+                        was captured -- for the video member, the session id it generated in
+                        memory at start and never persists. After a recovery it is the evidence
+                        that distinguishes a genuine restore (same fingerprint) from a restart
+                        that merely re-read the replicated state (new fingerprint). Without it
+                        "the application came back" is unfalsifiable.
+                      type: string
+                    logicalPosition:
+                      description: |-
+                        LogicalPosition is the application-level position this artifact
+                        corresponds to. It is what makes two heterogeneous artifacts comparable.
+                      format: int64
+                      type: integer
+                    member:
+                      type: string
+                    message:
+                      type: string
+                    nodeName:
+                      type: string
+                    nodePath:
+                      type: string
+                    ref:
+                      description: |-
+                        Ref is the canonical, resolvable reference to the artifact.
+                          containerCheckpoint -> minio://<bucket>/<object>
+                          replicationState    -> redis-repl://<host>:<port>/<offset>
+                      type: string
+                    replicationId:
+                      type: string
+                    replicationOffset:
+                      format: int64
+                      type: integer
+                    sizeBytes:
+                      format: int64
+                      type: integer
+                    type:
+                      description: ArtifactType distinguishes heterogeneous recovery
+                        state within one epoch.
+                      type: string
+                  required:
+                  - driver
+                  - member
+                  - type
+                  type: object
+                type: array
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              message:
+                type: string
+              phase:
+                description: "RecoveryPointPhase is the Recovery Epoch state machine.
+                  The order is fixed:\n\n\tPending -> Preparing -> Quiescing -> Capturing
+                  -> Validating -> Committed\n\nAny failure short-circuits to Failed.
+                  ONLY Committed+validated is recovery\neligible; every other phase
+                  is explicitly not."
+                type: string
+              timings:
+                description: EpochTimings records stage boundaries for the RTO/RPO
+                  analysis.
+                properties:
+                  barrierReached:
+                    format: date-time
+                    type: string
+                  captureComplete:
+                    format: date-time
+                    type: string
+                  captureStart:
+                    format: date-time
+                    type: string
+                  commitTime:
+                    format: date-time
+                    type: string
+                  prepareStart:
+                    format: date-time
+                    type: string
+                  validateComplete:
+                    format: date-time
+                    type: string
+                type: object
+              validation:
+                description: ValidationResult is the cross-driver consistency verdict.
+                properties:
+                  checkpointPosition:
+                    format: int64
+                    type: integer
+                  message:
+                    type: string
+                  observedSkew:
+                    format: int64
+                    type: integer
+                  reason:
+                    type: string
+                  replicatedPosition:
+                    format: int64
+                    type: integer
+                  validated:
+                    description: Validated is true only when every mandatory consistency
+                      check passed.
+                    type: boolean
+                required:
+                - validated
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

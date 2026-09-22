@@ -1,0 +1,115 @@
+apiVersion: v1
+items:
+- apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+  kind: RecoveryPoint
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-1","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":1,"maxPositionSkew":2,"recoveryGroupRef":"video-stream-rg"}}
+    creationTimestamp: "2026-09-21T09:26:24Z"
+    generation: 1
+    name: video-stream-rg-epoch-1
+    namespace: default
+    resourceVersion: "44805685"
+    uid: 1935e834-8e97-4392-a1eb-73b3ea7d241a
+  spec:
+    barrierTimeoutSeconds: 30
+    captureTimeoutSeconds: 300
+    epoch: 1
+    maxPositionSkew: 2
+    recoveryGroupRef: video-stream-rg
+  status:
+    conditions:
+    - lastTransitionTime: "2026-09-21T09:26:25Z"
+      message: 'member "video": kubelet checkpoint ramp-demo/video-session-c6b57c879-q2gbt/video
+        on workload01-md-0-4qfvd-gnqcb: the server could not find the requested resource
+        (post nodes workload01-md-0-4qfvd-gnqcb) (body: cannot parse value of timeout
+        parameter)'
+      observedGeneration: 1
+      reason: CheckpointFailed
+      status: "False"
+      type: Committed
+    message: 'member "video": kubelet checkpoint ramp-demo/video-session-c6b57c879-q2gbt/video
+      on workload01-md-0-4qfvd-gnqcb: the server could not find the requested resource
+      (post nodes workload01-md-0-4qfvd-gnqcb) (body: cannot parse value of timeout
+      parameter)'
+    phase: Failed
+    timings:
+      barrierReached: "2026-09-21T09:26:24Z"
+      captureStart: "2026-09-21T09:26:24Z"
+      prepareStart: "2026-09-21T09:26:24Z"
+    validation:
+      reason: CheckpointFailed
+      validated: false
+- apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+  kind: RecoveryPoint
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-2","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":2,"maxPositionSkew":2,"recoveryGroupRef":"video-stream-rg"}}
+    creationTimestamp: "2026-09-21T09:27:16Z"
+    generation: 1
+    name: video-stream-rg-epoch-2
+    namespace: default
+    resourceVersion: "44806159"
+    uid: d8c1ec3d-1b9f-4c81-b3fd-7df15bd90257
+  spec:
+    barrierTimeoutSeconds: 30
+    captureTimeoutSeconds: 300
+    epoch: 2
+    maxPositionSkew: 2
+    recoveryGroupRef: video-stream-rg
+  status:
+    artifacts:
+    - capturedAt: "2026-09-21T09:27:16Z"
+      driver: redis-replication
+      logicalPosition: 866
+      member: redis
+      message: role=master connectedReplicas=1
+      ref: redis-repl://192.168.28.238:30379/111890
+      replicationId: e2491b64e6400f7c508ef3e405a6ac35d429d12d
+      replicationOffset: 111890
+      type: replicationState
+    - capturedAt: "2026-09-21T09:27:18Z"
+      driver: container-checkpoint
+      logicalPosition: 866
+      member: video
+      message: kubelet checkpoint took 1.923s
+      nodeName: workload01-md-0-4qfvd-gnqcb
+      nodePath: /var/lib/kubelet/checkpoints/checkpoint-video-session-c6b57c879-q2gbt_ramp-demo-video-2026-09-21T09:27:16Z.tar
+      ref: minio://checkpoints/checkpoint-video-session-c6b57c879-q2gbt_ramp-demo-video-2026-09-21T09:27:16Z.tar
+      sizeBytes: 10051072
+      type: containerCheckpoint
+    conditions:
+    - lastTransitionTime: "2026-09-21T09:27:22Z"
+      message: container-checkpoint position 866 and redis-replication position 866
+        differ by 0 (tolerance 2)
+      observedGeneration: 1
+      reason: ConsistentAcrossDrivers
+      status: "True"
+      type: Validated
+    - lastTransitionTime: "2026-09-21T09:27:22Z"
+      message: epoch 2 committed with 2 heterogeneous artifacts
+      observedGeneration: 1
+      reason: EpochCommitted
+      status: "True"
+      type: Committed
+    message: epoch 2 committed with 2 heterogeneous artifacts
+    phase: Committed
+    timings:
+      barrierReached: "2026-09-21T09:27:16Z"
+      captureComplete: "2026-09-21T09:27:22Z"
+      captureStart: "2026-09-21T09:27:16Z"
+      commitTime: "2026-09-21T09:27:22Z"
+      prepareStart: "2026-09-21T09:27:16Z"
+      validateComplete: "2026-09-21T09:27:22Z"
+    validation:
+      checkpointPosition: 866
+      message: container-checkpoint position 866 and redis-replication position 866
+        differ by 0 (tolerance 2)
+      reason: ConsistentAcrossDrivers
+      replicatedPosition: 866
+      validated: true
+kind: List
+metadata:
+  resourceVersion: ""

@@ -1,0 +1,1 @@
+  updated workload01:video-session/deployment.yaml

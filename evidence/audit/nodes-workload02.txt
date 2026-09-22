@@ -1,0 +1,3 @@
+NAME                             STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+workload02-control-plane-q5vlg   Ready    control-plane   41d   v1.32.8   10.6.0.129    <none>        Ubuntu 22.04.5 LTS   5.15.0-153-generic   containerd://1.7.25
+workload02-md-0-rx5mn-pjkrh      Ready    <none>          41d   v1.32.8   10.6.0.127    <none>        Ubuntu 22.04.5 LTS   5.15.0-153-generic   containerd://2.1.4

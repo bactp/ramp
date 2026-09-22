@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"argoproj.io/v1alpha1","kind":"Application","metadata":{"annotations":{},"finalizers":["resources-finalizer.argocd.argoproj.io"],"labels":{"app.kubernetes.io/instance":"workload02-dr"},"name":"argocd-workload01-video-session","namespace":"argocd"},"spec":{"destination":{"namespace":"ramp-demo","server":"https://kubernetes.default.svc"},"project":"default","source":{"directory":{"recurse":true},"path":"video-session","repoURL":"http://192.168.28.158:32100/nephio/workload01.git","targetRevision":"HEAD"},"syncPolicy":{"automated":{"allowEmpty":true,"prune":false,"selfHeal":true},"syncOptions":["CreateNamespace=true"]}}}
+  creationTimestamp: "2026-09-22T04:32:42Z"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  generation: 12
+  labels:
+    app.kubernetes.io/instance: workload02-dr
+  name: argocd-workload01-video-session
+  namespace: argocd
+  resourceVersion: "12994513"
+  uid: afacca46-a0f5-4fcc-b37a-6cf6807bb3bf
+spec:
+  destination:
+    namespace: ramp-demo
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    directory:
+      jsonnet: {}
+      recurse: true
+    path: video-session
+    repoURL: http://192.168.28.158:32100/nephio/workload01.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+status:
+  controllerNamespace: argocd
+  health:
+    status: Healthy
+  history:
+  - deployStartedAt: "2026-09-22T04:32:42Z"
+    deployedAt: "2026-09-22T04:32:42Z"
+    id: 0
+    revision: 0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+    source:
+      directory:
+        jsonnet: {}
+        recurse: true
+      path: video-session
+      repoURL: http://192.168.28.158:32100/nephio/workload01.git
+      targetRevision: HEAD
+  operationState:
+    finishedAt: "2026-09-22T04:32:42Z"
+    message: successfully synced (all tasks run)
+    operation:
+      initiatedBy:
+        automated: true
+      retry:
+        limit: 5
+      sync:
+        revision: 0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+        syncOptions:
+        - CreateNamespace=true
+    phase: Succeeded
+    startedAt: "2026-09-22T04:32:42Z"
+    syncResult:
+      resources:
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/video-session created
+        name: video-session
+        namespace: ramp-demo
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/video-session created
+        name: video-session
+        namespace: ramp-demo
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      revision: 0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+      source:
+        directory:
+          jsonnet: {}
+          recurse: true
+        path: video-session
+        repoURL: http://192.168.28.158:32100/nephio/workload01.git
+        targetRevision: HEAD
+  reconciledAt: "2026-09-22T04:32:46Z"
+  resources:
+  - health:
+      status: Healthy
+    kind: Service
+    name: video-session
+    namespace: ramp-demo
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: video-session
+    namespace: ramp-demo
+    status: Synced
+    version: v1
+  sourceType: Directory
+  summary:
+    images:
+    - docker.io/ramp/checkpoint-video-session:epoch-6
+  sync:
+    comparedTo:
+      destination:
+        namespace: ramp-demo
+        server: https://kubernetes.default.svc
+      source:
+        directory:
+          jsonnet: {}
+          recurse: true
+        path: video-session
+        repoURL: http://192.168.28.158:32100/nephio/workload01.git
+        targetRevision: HEAD
+    revision: 0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+    status: Synced

@@ -1,0 +1,4 @@
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+sre-control    Ready    control-plane   68d   v1.28.9   192.168.28.158   <none>        Ubuntu 22.04.4 LTS   5.15.0-117-generic   containerd://1.7.13
+sre-worker01   Ready    <none>          68d   v1.28.9   192.168.28.226   <none>        Ubuntu 22.04.4 LTS   5.15.0-117-generic   containerd://1.7.13
+sre-worker02   Ready    <none>          68d   v1.28.9   192.168.28.130   <none>        Ubuntu 22.04.4 LTS   5.15.0-117-generic   containerd://1.7.13

@@ -1,0 +1,298 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: recoverygroups.ramp.dcn.ssu.ac.kr
+spec:
+  group: ramp.dcn.ssu.ac.kr
+  names:
+    kind: RecoveryGroup
+    listKind: RecoveryGroupList
+    plural: recoverygroups
+    shortNames:
+    - rg
+    singular: recoverygroup
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.latestEpoch
+      name: Members
+      priority: 1
+      type: integer
+    - jsonPath: .status.latestEpoch
+      name: Epoch
+      type: integer
+    - jsonPath: .status.latestRecoveryPoint
+      name: LatestRecoveryPoint
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          RecoveryGroup is the minimum recovery-consistency domain: the set of
+          components that cannot be recovered independently without risking
+          application correctness or the recovery objective.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RecoveryGroupSpec defines the desired state of a RecoveryGroup.
+            properties:
+              appBundleRef:
+                description: AppBundleRef is the authoritative application graph.
+                properties:
+                  cluster:
+                    description: Cluster is the registered cluster name the AppBundle
+                      lives in.
+                    type: string
+                  name:
+                    description: Name of the AppBundle object.
+                    type: string
+                  namespace:
+                    description: Namespace of the AppBundle object.
+                    type: string
+                required:
+                - cluster
+                - name
+                - namespace
+                type: object
+              members:
+                description: |-
+                  Members is the recovery-consistency domain. This is deliberately a SUBSET
+                  of the AppBundle's components: Services/ConfigMaps/Namespaces are
+                  deployment concerns and become RecoveryPath prerequisites instead.
+                items:
+                  description: RecoveryMember is one element of the recovery-consistency
+                    domain.
+                  properties:
+                    componentRef:
+                      description: ComponentRef binds this member to an AppBundle
+                        component.
+                      properties:
+                        component:
+                          description: Component is the AppBundle component name inside
+                            that group.
+                          type: string
+                        group:
+                          description: Group is the AppBundle group name.
+                          type: string
+                      required:
+                      - component
+                      - group
+                      type: object
+                    consistencyKeys:
+                      description: |-
+                        ConsistencyKeys are Redis keys whose values pin the application logical
+                        position captured into a RecoveryPoint. Used by redis-replication to make
+                        the recovery point meaningful to the application, not just byte-consistent.
+                      items:
+                        type: string
+                      type: array
+                    container:
+                      description: |-
+                        Container names the container to checkpoint. Required for
+                        recoveryDriver=container-checkpoint.
+                      type: string
+                    name:
+                      description: Name is the member's identity inside the RecoveryGroup.
+                      type: string
+                    recoveryDriver:
+                      description: RecoveryDriver selects the recovery mechanism for
+                        this member.
+                      enum:
+                      - container-checkpoint
+                      - redis-replication
+                      type: string
+                    sourceEndpoint:
+                      description: |-
+                        SourceEndpoint is the driver's source-side address
+                        (redis-replication: the primary).
+                      properties:
+                        host:
+                          description: Host is a routable address (floating IP or
+                            DNS name).
+                          type: string
+                        port:
+                          description: Port is the Redis port on that address.
+                          format: int32
+                          type: integer
+                      required:
+                      - host
+                      - port
+                      type: object
+                  required:
+                  - componentRef
+                  - name
+                  - recoveryDriver
+                  type: object
+                type: array
+              recoveryContract:
+                description: RecoveryContract is the objective this group is held
+                  to.
+                properties:
+                  rpo:
+                    description: RPO is the recovery point objective.
+                    type: string
+                  rto:
+                    description: RTO is the recovery time objective.
+                    type: string
+                type: object
+            required:
+            - appBundleRef
+            - members
+            type: object
+          status:
+            description: RecoveryGroupStatus is the observed state of a RecoveryGroup.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              latestEpoch:
+                description: LatestEpoch is the highest epoch number observed for
+                  this group.
+                format: int64
+                type: integer
+              latestRecoveryPoint:
+                description: |-
+                  LatestRecoveryPoint names the newest RecoveryPoint that reached
+                  phase=Committed AND validated=true. An incomplete epoch never appears here.
+                type: string
+              latestRecoveryPointTime:
+                format: date-time
+                type: string
+              members:
+                items:
+                  description: MemberStatus is the resolved runtime view of a member.
+                  properties:
+                    apiVersion:
+                      description: |-
+                        APIVersion/Kind/Namespace/Name come from the AppBundle component's
+                        status.resourceRef -- copied, never re-derived.
+                      type: string
+                    driverReady:
+                      description: |-
+                        DriverReady reports whether the bound driver's prerequisites hold on the
+                        source side (e.g. checkpoint feature reachable, Redis answering).
+                      type: boolean
+                    kind:
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    nodeName:
+                      type: string
+                    podName:
+                      description: PodName/NodeName are the runtime target the driver
+                        acts on.
+                      type: string
+                    recoveryDriver:
+                      description: |-
+                        RecoveryDriver names the recovery mechanism bound to a member. Different
+                        members of the same RecoveryGroup deliberately use different drivers -- that
+                        heterogeneity is the property Scenario 1 exists to demonstrate.
+                      type: string
+                    resolved:
+                      description: |-
+                        Resolved reports whether the AppBundle component could be mapped to a
+                        live runtime resource.
+                      type: boolean
+                    resourceName:
+                      type: string
+                  required:
+                  - driverReady
+                  - name
+                  - recoveryDriver
+                  - resolved
+                  type: object
+                type: array
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: RecoveryGroupPhase is the coarse state of the group.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

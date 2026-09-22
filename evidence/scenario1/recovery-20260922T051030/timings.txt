@@ -1,0 +1,20 @@
+T_failure=2026-09-22T05:10:30+00:00 epoch=1790053830.341
+T_failure_complete=2026-09-22T05:11:01+00:00 epoch=1790053861.880
+T_recovery_start=2026-09-22T05:11:01+00:00 epoch=1790053861.888
+T_redis_ready=2026-09-22T05:11:02+00:00 epoch=1790053862.371
+T_git_committed=2026-09-22T05:11:06+00:00 epoch=1790053866.557
+T_argocd_applied=2026-09-22T05:12:07+00:00 epoch=1790053927.623
+T_pod_ready=2026-09-22T05:12:07+00:00 epoch=1790053927.730
+T_app_ready=2026-09-22T05:12:09+00:00 epoch=1790053929.317
+
+===== RECOVERY BREAKDOWN =====
+  failure detection window           31.5s
+  redis promotion                    0.5s
+  git commit (activate)              4.2s
+  argocd sync + apply                61.1s
+  pod ready (restore)                0.1s
+  pod ready -> APPLICATION ready     1.6s
+    (of which: probe dwell)          1.0s
+  ----------------------------------
+  RTO to pod ready                   65.8s
+  RTO to APPLICATION ready           67.4s

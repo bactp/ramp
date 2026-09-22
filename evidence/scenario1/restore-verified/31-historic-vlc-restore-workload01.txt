@@ -1,0 +1,22 @@
+cid=7b7ab84dc1496b6f5839b4508a78522176974d7f340e0cfc1daaa8fe98dae2f0
+image      : docker.io/tuongvx/vlc-app:latest
+imageRef   : docker.io/tuongvx/vlc-app@sha256:75ad2af24a66e389690e80147f3aaeffb2a8f98230209186aa4a460b990f28b8
+createdAt  : 2026-09-21T09:50:19.284946121Z
+startedAt  : 2026-09-21T09:50:19.814649775Z
+state      : CONTAINER_RUNNING
+
+--- annotations có chứa criu/checkpoint/restore ---
+  /info/config/annotations/checkpointImage = docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest
+  /info/config/annotations/checkpointedAt = 2026-08-12T15:28:00.077691953Z
+  /info/config/annotations/restored = true
+  /status/annotations/checkpointImage = docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest
+  /status/annotations/checkpointedAt = 2026-08-12T15:28:00.077691953Z
+  /status/annotations/restored = true
+
+--- process.args của container đang chạy ---
+  ['/usr/bin/cvlc', 'frozen.mp4', '--loop', '--sout', '#transcode{scodec=none}:http{mux=ffmpeg{mux=flv},dst=:8080/}']
+--- rootfs ---
+  {'path': 'rootfs'}
+
+=== tiến trình vlc thực sự đang chạy ===
+2291578   60817 /usr/bin/vlc -I dummy frozen.mp4 --loop --sout #transcode{scodec=none}:http{mux=ffmpeg{mux=flv},dst=:8080/}

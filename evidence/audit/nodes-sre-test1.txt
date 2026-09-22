@@ -1,0 +1,4 @@
+NAME                            STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+sre-test1-control-plane-x77z8   Ready    control-plane   67d   v1.32.8   10.6.0.14     <none>        Ubuntu 22.04.5 LTS   5.15.0-153-generic   containerd://1.7.25
+sre-test1-md-0-n2wps-fwjk8      Ready    <none>          67d   v1.32.8   10.6.0.103    <none>        Ubuntu 22.04.5 LTS   5.15.0-153-generic   containerd://1.7.25
+sre-test1-md-0-n2wps-zxtrt      Ready    <none>          67d   v1.32.8   10.6.0.126    <none>        Ubuntu 22.04.5 LTS   5.15.0-153-generic   containerd://1.7.25

@@ -1,0 +1,23 @@
+executing path video-workload01-to-workload02 (readiness=WARM, recoveryPoint=video-stream-rg-epoch-5)
+WARNING: path is WARM, not HOT; activation will take longer than estimatedRTO
+recovery point position = 295 ; checkpoint artifact = checkpoint-video-session-c6b57c879-vbpww_ramp-demo-video-2026-09-21T09:58:59Z.tar
+T_recovery_start=2026-09-21T10:00:11+00:00
+--- promoting redis standby ---
+OK
+T_redis_ready=2026-09-21T10:00:12+00:00  role=master  position=335
+--- restoring video container from checkpoint ---
+job.batch/ramp-video-restore condition met
+RESTORE_START=2026-09-21T10:00:15+00:00
+checkpoint extracted: 23 CRIU images
+rootfs image: docker.io/library/python:3.12-slim
+rootfs unpacked from 4 layers
+rootfs entries: 19
+bundle spec written: 12 mounts (6 re-homed), 6 namespaces
+RUNC_RESTORE_START=2026-09-21T10:00:20+00:00
+time="2026-09-21T10:00:20Z" level=warning msg="open /run/criuwork/restore.log: no such file or directory"
+time="2026-09-21T10:00:20Z" level=error msg="criu failed: type RESTORE errno 0"
+RUNC_RESTORE_RC=1
+RUNC_RESTORE_END=2026-09-21T10:00:20+00:00
+ID          PID         STATUS      BUNDLE      CREATED     OWNER
+RESTORE_END=2026-09-21T10:00:20+00:00
+T_video_restore_attempt_done=2026-09-21T10:00:23+00:00

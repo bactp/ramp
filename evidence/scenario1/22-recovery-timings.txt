@@ -1,0 +1,4 @@
+T_video_recovery_start=2026-09-21T09:53:20+00:00
+T_video_ready=2026-09-21T09:53:23+00:00
+=== RecoveryGroup operational on workload02 ===
+T_group_ready=2026-09-21T09:53:32+00:00

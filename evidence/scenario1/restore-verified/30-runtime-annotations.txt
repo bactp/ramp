@@ -1,0 +1,4 @@
+  checkpointImage = docker.io/ramp/checkpoint-video-session:epoch-6
+  checkpointedAt = 2026-09-21T10:06:58.006614129Z
+  restored = true
+  imageRef = docker.io/library/python@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9

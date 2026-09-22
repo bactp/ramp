@@ -1,0 +1,165 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"argoproj.io/v1alpha1","kind":"Application","metadata":{"annotations":{},"finalizers":["resources-finalizer.argocd.argoproj.io"],"labels":{"app.kubernetes.io/instance":"workload02-dr"},"name":"argocd-workload01-video","namespace":"argocd"},"spec":{"destination":{"namespace":"default","server":"https://kubernetes.default.svc"},"ignoreDifferences":[{"group":"fn.kpt.dev","kind":"ApplyReplacements"},{"group":"fn.kpt.dev","kind":"StarlarkRun"},{"group":"infra.nephio.org","kind":"WorkloadCluster"},{"group":"","jsonPointers":["/spec/containers"],"kind":"Deployment","name":"video"}],"project":"default","source":{"directory":{"recurse":true},"path":"video","repoURL":"http://192.168.28.158:32100/nephio/workload01.git","targetRevision":"HEAD"},"syncPolicy":{"automated":{"allowEmpty":true,"prune":false,"selfHeal":true},"syncOptions":["CreateNamespace=true"]}}}
+  creationTimestamp: "2026-08-12T15:25:37Z"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  generation: 19431
+  labels:
+    app.kubernetes.io/instance: workload02-dr
+  name: argocd-workload01-video
+  namespace: argocd
+  resourceVersion: "12974449"
+  uid: 9f11edea-d5f5-442e-a095-35046c4da030
+spec:
+  destination:
+    namespace: default
+    server: https://kubernetes.default.svc
+  ignoreDifferences:
+  - group: fn.kpt.dev
+    kind: ApplyReplacements
+  - group: fn.kpt.dev
+    kind: StarlarkRun
+  - group: infra.nephio.org
+    kind: WorkloadCluster
+  - group: ""
+    jsonPointers:
+    - /spec/containers
+    kind: Deployment
+    name: video
+  project: default
+  source:
+    directory:
+      jsonnet: {}
+      recurse: true
+    path: video
+    repoURL: http://192.168.28.158:32100/nephio/workload01.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+status:
+  controllerNamespace: argocd
+  health:
+    status: Healthy
+  history:
+  - deployStartedAt: "2026-08-12T15:25:37Z"
+    deployedAt: "2026-08-12T15:25:37Z"
+    id: 0
+    revision: f0a9570f04a57390ea979388961540a70b4904fb
+    source:
+      directory:
+        jsonnet: {}
+        recurse: true
+      path: video
+      repoURL: http://192.168.28.158:32100/nephio/workload01.git
+      targetRevision: HEAD
+  operationState:
+    finishedAt: "2026-08-12T15:25:37Z"
+    message: successfully synced (all tasks run)
+    operation:
+      initiatedBy:
+        automated: true
+      retry:
+        limit: 5
+      sync:
+        revision: f0a9570f04a57390ea979388961540a70b4904fb
+        syncOptions:
+        - CreateNamespace=true
+    phase: Succeeded
+    startedAt: "2026-08-12T15:25:37Z"
+    syncResult:
+      resources:
+      - group: ""
+        hookPhase: Running
+        kind: ConfigMap
+        message: configmap/kptfile.kpt.dev created
+        name: kptfile.kpt.dev
+        namespace: default
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/video-service created
+        name: video-service
+        namespace: default
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/video created
+        name: video
+        namespace: default
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      revision: f0a9570f04a57390ea979388961540a70b4904fb
+      source:
+        directory:
+          jsonnet: {}
+          recurse: true
+        path: video
+        repoURL: http://192.168.28.158:32100/nephio/workload01.git
+        targetRevision: HEAD
+  reconciledAt: "2026-09-22T02:57:33Z"
+  resources:
+  - kind: ConfigMap
+    name: kptfile.kpt.dev
+    namespace: default
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: video-service
+    namespace: default
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: video
+    namespace: default
+    status: Synced
+    version: v1
+  sourceType: Directory
+  summary:
+    images:
+    - docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest
+  sync:
+    comparedTo:
+      destination:
+        namespace: default
+        server: https://kubernetes.default.svc
+      ignoreDifferences:
+      - group: fn.kpt.dev
+        kind: ApplyReplacements
+      - group: fn.kpt.dev
+        kind: StarlarkRun
+      - group: infra.nephio.org
+        kind: WorkloadCluster
+      - jsonPointers:
+        - /spec/containers
+        kind: Deployment
+        name: video
+      source:
+        directory:
+          jsonnet: {}
+          recurse: true
+        path: video
+        repoURL: http://192.168.28.158:32100/nephio/workload01.git
+        targetRevision: HEAD
+    revision: f0a9570f04a57390ea979388961540a70b4904fb
+    status: Synced

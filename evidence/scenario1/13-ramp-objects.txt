@@ -1,0 +1,9 @@
+NAMESPACE   NAME                                               PHASE      EPOCH   LATESTRECOVERYPOINT       AGE
+default     recoverygroup.ramp.dcn.ssu.ac.kr/video-stream-rg   Resolved   2       video-stream-rg-epoch-2   11m
+
+NAMESPACE   NAME                                                       GROUP             EPOCH   PHASE       VALIDATED   SKEW   AGE
+default     recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-1   video-stream-rg   1       Failed      false              10m
+default     recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-2   video-stream-rg   2       Committed   true               9m49s
+
+NAMESPACE   NAME                                                             READINESS   SOURCE       TARGET       RECOVERYPOINT             ESTRTO   AGE
+default     recoverypath.ramp.dcn.ssu.ac.kr/video-workload01-to-workload02   HOT         workload01   workload02   video-stream-rg-epoch-2   17s      11m

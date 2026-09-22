@@ -1,0 +1,33 @@
+# One manually specified, deterministically evaluated recovery path.
+# Scenario 1 does not search for paths and does not rank them; it answers
+# "is THIS path executable right now, and if not, exactly what is missing?"
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPath
+metadata:
+  name: video-workload01-to-workload02
+  namespace: default
+spec:
+  recoveryGroupRef: video-stream-rg
+  sourceCluster: workload01
+  targetCluster: workload02
+  # empty recoveryPointRef = track the group's latest committed RecoveryPoint
+
+  targetPrereqs:
+    namespace: ramp-demo
+    standbyEndpoint:
+      host: 192.168.28.122   # workload02 NodePort via floating IP
+      port: 30380
+    maxReplicationLagBytes: 4096
+    checkpointStagingPath: /var/lib/kubelet/checkpoints
+    restoreCapabilityDaemonSet:
+      name: checkpoint-agent
+      namespace: kube-system
+    minAllocatableCpuMillis: 2000
+    minAllocatableMemoryMiB: 2048
+
+  recoveryActions:
+    - "promote redis standby on workload02 (REPLICAOF NO ONE)"
+    - "verify redis role=master and logical position >= recovery point position"
+    - "restore video container from the staged checkpoint artifact"
+    - "verify the restored video position is consistent with redis"
+    - "switch service traffic to workload02"

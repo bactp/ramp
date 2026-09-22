@@ -1,0 +1,1 @@
+docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest

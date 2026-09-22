@@ -1,0 +1,102 @@
+# Target-role checkpoint-agent.
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# ~/transition-operator/deploy/checkpoint-agent-daemonset.yaml mounts
+# /var/lib/kubelet/checkpoints with readOnly: true. That is correct for the
+# SOURCE role, where the agent only watches the directory and uploads new
+# checkpoint tars to MinIO -- it never needs to write.
+#
+# It makes the TARGET role impossible. The same agent binary also implements
+# syncFromMinio(), which pulls every artifact in the bucket down onto the local
+# node; that is precisely the staging step that turns a WARM recovery path into
+# a HOT one. With a read-only mount it fails on every object:
+#
+#   Failed to download checkpoint-...tar: open /var/lib/kubelet/checkpoints/
+#   ....part.minio: read-only file system
+#
+# (captured on workload02, 2026-09-21; see evidence/logs/.)
+#
+# RAMP does not patch the Transition Operator's manifest. It adds this
+# role-specific overlay instead, so the source deployment stays byte-identical
+# to upstream and the difference between the two roles is explicit.
+#
+# Apply to the TARGET cluster only:
+#   kubectl apply -f checkpoint-agent-target-role.yaml --kubeconfig workload02.kubeconfig
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: checkpoint-agent
+  namespace: kube-system
+  annotations:
+    ramp.dcn.ssu.ac.kr/role: "target"
+    ramp.dcn.ssu.ac.kr/rationale: >-
+      target-role agents must WRITE into the checkpoint staging directory to
+      pull artifacts from MinIO; the upstream source-role manifest mounts it
+      read-only.
+spec:
+  selector:
+    matchLabels:
+      app: checkpoint-agent
+  template:
+    metadata:
+      labels:
+        app: checkpoint-agent
+        ramp.dcn.ssu.ac.kr/role: target
+    spec:
+      serviceAccountName: checkpoint-agent
+      volumes:
+        - name: kubelet-checkpoints
+          hostPath:
+            path: /var/lib/kubelet/checkpoints
+            type: DirectoryOrCreate
+      containers:
+        - name: checkpoint-agent
+          image: docker.io/phuongbac/checkpoint-agent:v1.0.1-nodefix
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CHECKPOINT_DIR
+              value: /var/lib/kubelet/checkpoints
+            - name: MINIO_ENDPOINT
+              value: 192.168.28.158:32000
+            - name: MINIO_BUCKET
+              value: checkpoints
+            # Blind whole-bucket staging is switched off deliberately.
+            #
+            # syncFromMinio() pulls EVERY object in the bucket on every tick.
+            # Measured on this testbed (2026-09-21): the bucket holds 238
+            # objects / 5.32 GB of historical checkpoints, and the artifact the
+            # current RecoveryPoint actually needs sorts LAST, so a 10 MB
+            # artifact costs 5.31 GB of transfer before it is staged. Staging
+            # latency there is a function of total artifact-store size, not of
+            # what the recovery path needs.
+            #
+            # That is precisely the fixed periodic preparation RAMP exists to
+            # replace: readiness is supposed to be an elastic resource spent on
+            # the paths that need it. The agent is kept for its source-side
+            # upload duty and its restore-capability role; staging becomes a
+            # path-directed preparation action instead
+            # (scripts/ramp-scenario1/30-prepare-path.sh).
+            - name: PULL_INTERVAL
+              value: 24h
+            - name: CONTROLLER_URL
+              value: http://192.168.28.158:30092/heartbeat
+            - name: POD_NAMESPACE
+              valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+            - name: NODE_NAME
+              valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+            - name: NODE_IP
+              valueFrom: {fieldRef: {fieldPath: status.hostIP}}
+            - name: MINIO_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: minio-credentials, key: MINIO_ACCESS_KEY}}
+            - name: MINIO_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: minio-credentials, key: MINIO_SECRET_KEY}}
+          volumeMounts:
+            - name: kubelet-checkpoints
+              mountPath: /var/lib/kubelet/checkpoints
+              # THE difference from the source role.
+              readOnly: false
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true

@@ -1,0 +1,5 @@
+NAME                              SYNC STATUS   HEALTH STATUS   REVISION
+argocd-workload01-video           Synced        Healthy         0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+argocd-workload01-video-session   Synced        Healthy         0ca9c9141ffa58ac43bb059d2ab80be78e0f6ab7
+workload02                        Synced        Healthy         2b389fadaa7efaebfb3590fc6cf0f61b43016c65
+workload02-dr                     Synced        Healthy         69aabce7313ba07bc4774ed2a3bfd4fdb0404be7

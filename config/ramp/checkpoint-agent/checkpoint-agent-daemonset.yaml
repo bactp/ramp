@@ -1,0 +1,138 @@
+# Apply ONLY to the source workload cluster (workload01) - this is the
+# live-workload watcher/uploader, not something target/failover clusters need:
+#   kubectl apply -f deploy/checkpoint-agent-daemonset.yaml --kubeconfig workload01.kubeconfig
+#
+# Corrections vs. the upstream sample (vitu-mafeni/checkpoint-agent agent-og/daemonset.yaml):
+# - image tag pinned to v1.0.0 - that's the only tag actually published; `:latest` 404s.
+# - added CONTROLLER_URL and POD_NAMESPACE - the v1.0.0 binary log.Fatal()s at
+#   startup without them (verified by running the image locally), even though
+#   the upstream sample and its own README don't mark them as required.
+# - dropped `nodeSelector: node-role.kubernetes.io/worker: ""` - these
+#   clusters' worker nodes don't carry that label (checked via `kubectl get
+#   nodes --show-labels`), so the sample's selector would match zero nodes.
+#   The control-plane node already carries the standard NoSchedule taint, so
+#   omitting the selector (and not tolerating that taint) still keeps this
+#   DaemonSet off the control-plane - same effective placement, no dead
+#   selector to maintain.
+# - image switched to a fork (docker.io/phuongbac/checkpoint-agent:v1.0.1-nodefix)
+#   built from the checkpoint-agent repo's current agent-og/main.go, patched to
+#   read NODE_NAME/NODE_IP from the Downward API. The upstream v1.0.0 image
+#   sends "node"/"ip" as empty strings unconditionally (confirmed by capturing
+#   its actual heartbeat payload) - and even the current upstream source has a
+#   latent version of the same bug: os.Hostname() in a pod without
+#   hostNetwork:true returns the POD's name, not the real node name, which
+#   then fails the in-agent Nodes().Get() lookup and leaves the cluster/owner
+#   annotations blank too. NODE_NAME/NODE_IP from the Downward API sidesteps
+#   both failure modes.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-credentials
+  namespace: kube-system
+type: Opaque
+stringData:
+  # TEMPLATE ONLY - do not put the real values here / commit them.
+  # Real credentials match config/secrets/minio-secret.yaml (gitignored,
+  # kept on sre-control only). Patch this Secret with the real values after
+  # applying this file, or apply config/secrets/minio-secret.yaml instead.
+  MINIO_ACCESS_KEY: "<see config/secrets/minio-secret.yaml on sre-control>"
+  MINIO_SECRET_KEY: "<see config/secrets/minio-secret.yaml on sre-control>"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: checkpoint-agent
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: checkpoint-agent-node-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: checkpoint-agent-node-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: checkpoint-agent
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: checkpoint-agent-node-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: checkpoint-agent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: checkpoint-agent
+  template:
+    metadata:
+      labels:
+        app: checkpoint-agent
+    spec:
+      serviceAccountName: checkpoint-agent
+      volumes:
+        - name: kubelet-checkpoints
+          hostPath:
+            path: /var/lib/kubelet/checkpoints
+            type: DirectoryOrCreate
+      containers:
+        - name: checkpoint-agent
+          image: docker.io/phuongbac/checkpoint-agent:v1.0.1-nodefix
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CHECKPOINT_DIR
+              value: /var/lib/kubelet/checkpoints
+            # mgmt-cluster minio NodePort - checkpoint-agent runs on a
+            # separate workload cluster, so it must use the NodePort address
+            # (shared 192.168.28.0/24 network), not in-cluster Service DNS.
+            - name: MINIO_ENDPOINT
+              value: 192.168.28.158:32000
+            - name: MINIO_BUCKET
+              value: checkpoints
+            - name: PULL_INTERVAL
+              value: 30s
+            # transition-operator heartbeat endpoint, mgmt-cluster NodePort
+            # (config/default/metrics_service.yaml, nodePort 30092).
+            - name: CONTROLLER_URL
+              value: http://192.168.28.158:30092/heartbeat
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: MINIO_SECRET_KEY
+          volumeMounts:
+            - name: kubelet-checkpoints
+              mountPath: /var/lib/kubelet/checkpoints
+              readOnly: true
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true

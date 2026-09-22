@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-session
+  namespace: ramp-demo
+  annotations:
+    transition.dcnlab.ssu.ac.kr/cluster-policy: "true"
+    transition.dcnlab.ssu.ac.kr/packageName: video-session
+    ramp.dcn.ssu.ac.kr/recovery-driver: container-checkpoint
+  labels:
+    app: video-session
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-session
+  template:
+    metadata:
+      labels:
+        app: video-session
+        ramp.dcn.ssu.ac.kr/role: video
+    spec:
+      # Pinned because the checkpoint image was imported onto this node rather
+      # than pushed to a registry; see the header note.
+      nodeSelector:
+        kubernetes.io/hostname: workload02-md-0-rx5mn-pjkrh
+      containers:
+        - name: video
+          image: docker.io/ramp/checkpoint-video-session:epoch-6
+          imagePullPolicy: Never
+          env:
+            - {name: REDIS_HOST, value: "redis.ramp-demo.svc.cluster.local"}
+            - {name: REDIS_PORT, value: "6379"}
+            - {name: FRAMES_PER_TICK, value: "30"}

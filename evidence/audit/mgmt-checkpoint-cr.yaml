@@ -1,0 +1,65 @@
+apiVersion: transition.dcnlab.ssu.ac.kr/v1
+kind: Checkpoint
+metadata:
+  creationTimestamp: "2026-08-12T14:40:58Z"
+  finalizers:
+  - checkpoint.transition.dcnlab.ssu.ac.kr/finalizer
+  generation: 1
+  name: checkpoint-clusterpolicy-video-77b57c57bc-cqnzv-video
+  namespace: default
+  resourceVersion: "16600794"
+  uid: 3f4d0eb2-58e2-41f0-b684-a10428fdc6be
+spec:
+  clusterRef:
+    name: workload01
+    repository: http://192.168.28.158:32100/nephio/workload01.git
+  podRef:
+    containerRef:
+      containers:
+      - args:
+        - frozen.mp4
+        - --loop
+        - --sout
+        - '#transcode{scodec=none}:http{mux=ffmpeg{mux=flv},dst=:8080/}'
+        image: tuongvx/vlc-app:latest
+        imagePullPolicy: IfNotPresent
+        name: vlc
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-mhjsq
+          readOnly: true
+    name: video-77b57c57bc-cqnzv
+    namespace: default
+  registry:
+    repository: phuongbac
+    secretRef:
+      name: reg-credentials
+      namespace: default
+    url: docker.io
+  resourceRef:
+    annotations:
+      deployment.kubernetes.io/revision: "3"
+      internal.kpt.dev/upstream-identifier: apps|Deployment|default|video
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"internal.kpt.dev/upstream-identifier":"apps|Deployment|default|video","transition.dcnlab.ssu.ac.kr/cluster-policy":"true","transition.dcnlab.ssu.ac.kr/packageName":"video"},"labels":{"app":"video","app.kubernetes.io/instance":"workload01"},"name":"video","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"video"}},"template":{"metadata":{"labels":{"app":"video"}},"spec":{"containers":[{"args":["frozen.mp4","--loop","--sout","#transcode{scodec=none}:http{mux=ffmpeg{mux=flv},dst=:8080/}"],"image":"tuongvx/vlc-app:latest","imagePullPolicy":"IfNotPresent","name":"vlc","ports":[{"containerPort":8080,"protocol":"TCP"}]}]}}}}
+      transition.dcnlab.ssu.ac.kr/cluster-policy: "true"
+      transition.dcnlab.ssu.ac.kr/packageName: video
+    apiVersion: ""
+    kind: Deployment
+    name: video
+    namespace: default
+  schedule: '*/2 * * * *'
+  targetClusterRef:
+    name: workload02
+status:
+  lastCheckpointImage: docker.io/phuongbac/checkpoint-default_video-77b57c57bc-cqnzv-vlc:latest
+  lastCheckpointTime: "2026-08-12T15:30:26Z"
+  message: Checkpoint completed successfully
+  originalImage: tuongvx/vlc-app:latest
+  phase: Completed

@@ -1,0 +1,11 @@
+RecoveryPoint video-stream-rg-epoch-11: instance=f3c56d94-cb19-45cf-910e-2db79211289b position=7
+  PASS  VideoServing            endpoint answers with valid state
+  PASS  InstanceRestored        session f3c56d94-cb19-45cf-910e-2db79211289b matches the checkpoint
+  PASS  ResumedFromCheckpoint   position 130 >= checkpoint position 7
+  PASS  DecodeInvariant         frames_decoded=3900 == position*30
+  PASS  StreamAdvancing         position 130 -> 133 over 3s
+  PASS  RedisPrimaryRole        redis at 192.168.28.122:30380 is master
+  PASS  DistributedConsistency  video=133 redis=134 skew=1 (<= 3)
+  PASS  WriteDatapath           redis session key written by the restored instance
+  PASS  RedisLinkUp             restored video is connected to redis
+verdict: GROUP-HEALTHY (9 passed, 0 failed)

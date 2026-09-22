@@ -1,0 +1,7 @@
+T_failure=2026-09-21T09:59:39+00:00
+deployment.apps/video-session scaled
+deployment.apps/redis-primary scaled
+pod/video-session-c6b57c879-vbpww condition met
+T_failure_complete=2026-09-21T10:00:10+00:00
+NAME                       READY   STATUS      RESTARTS   AGE
+ramp-video-restore-knz2k   0/1     Completed   0          7m56s

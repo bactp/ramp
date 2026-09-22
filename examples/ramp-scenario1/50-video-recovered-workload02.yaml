@@ -1,0 +1,96 @@
+# The video member, brought back on the recovery target.
+#
+# HONEST LABEL: this is the FALLBACK leg, not the container-checkpoint leg.
+# `runc restore` of the kubelet checkpoint archive does not work in this stack
+# (verified on BOTH the target and the source node -- see 04-results.md), so the
+# video member is restarted cold and re-seeded from the recovery point's Redis
+# state instead of resumed from its CRIU image.
+#
+# What that costs is exactly measurable, and is the point:
+#   recovered via Redis  : position           (the committed stream position)
+#   LOST without CRIU    : frames_decoded, session uuid, the frame ring buffer
+#                          -- the in-memory decode state no replication
+#                          mechanism can reproduce.
+# The restarted process re-derives frames_decoded from position, which restores
+# the invariant but NOT the original session identity.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-session
+  namespace: ramp-demo
+  labels:
+    app: video-session
+    ramp.dcn.ssu.ac.kr/role: video
+    ramp.dcn.ssu.ac.kr/recovered-on: workload02
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: video-session}
+  template:
+    metadata:
+      labels: {app: video-session, ramp.dcn.ssu.ac.kr/role: video}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+      containers:
+        - name: video
+          image: python:3.12-slim
+          env:
+            # Resolves to the PROMOTED standby on workload02.
+            - {name: REDIS_HOST, value: "redis.ramp-demo.svc.cluster.local"}
+            - {name: REDIS_PORT, value: "6379"}
+            - {name: FRAMES_PER_TICK, value: "30"}
+          command: ["python3", "-u", "-c"]
+          args:
+            - |
+              import socket, time, os, json, uuid, hashlib, collections
+              HOST = os.environ.get("REDIS_HOST", "redis")
+              PORT = int(os.environ.get("REDIS_PORT", "6379"))
+              FPT  = int(os.environ.get("FRAMES_PER_TICK", "30"))
+              POS_KEY, SESS_KEY = "ramp:video:position", "ramp:video:session"
+              STATE = "/tmp/ramp-video-state.json"
+              def resp(*args):
+                  out = ("*%d\r\n" % len(args)).encode()
+                  for a in args:
+                      b = str(a).encode()
+                      out += b"$%d\r\n" % len(b) + b + b"\r\n"
+                  s = socket.create_connection((HOST, PORT), timeout=3)
+                  try:
+                      s.sendall(out); return s.recv(65536)
+                  finally:
+                      s.close()
+              session, frames, ring = str(uuid.uuid4()), 0, collections.deque(maxlen=8)
+              pos = 0
+              try:
+                  r = resp("GET", POS_KEY)
+                  if r.startswith(b"$") and not r.startswith(b"$-1"):
+                      pos = int(r.split(b"\r\n")[1]); frames = pos * FPT
+                      print("resumed cold from redis pos=%d" % pos, flush=True)
+              except Exception as e:
+                  print("redis unavailable at start: %s" % e, flush=True)
+              print("video-session up session=%s pos=%d frames=%d" % (session, pos, frames), flush=True)
+              while True:
+                  pos += 1; frames += FPT
+                  ring.append(hashlib.sha256(("%s:%d" % (session, pos)).encode()).hexdigest()[:12])
+                  linked = True
+                  try:
+                      resp("SET", POS_KEY, pos); resp("SET", SESS_KEY, session)
+                  except Exception as e:
+                      linked = False
+                      print("redis write failed at pos=%d: %s" % (pos, e), flush=True)
+                  st = {"session": session, "position": pos, "frames_decoded": frames,
+                        "frames_per_tick": FPT, "ring_head": ring[-1],
+                        "redis_linked": linked, "ts": time.time()}
+                  try:
+                      open(STATE, "w").write(json.dumps(st))
+                  except Exception:
+                      pass
+                  if pos % 15 == 0:
+                      print("pos=%d frames=%d invariant_ok=%s linked=%s"
+                            % (pos, frames, frames == pos * FPT, linked), flush=True)
+                  time.sleep(1)

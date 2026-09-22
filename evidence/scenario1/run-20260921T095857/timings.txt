@@ -1,0 +1,20 @@
+T_run_start=2026-09-21T09:58:57+00:00
+recovery_point=video-stream-rg-epoch-5
+T_checkpoint_start=2026-09-21T09:58:59Z
+T_barrier_reached=2026-09-21T09:58:59Z
+T_checkpoint_complete=2026-09-21T09:59:04Z
+T_recoverypoint_commit=2026-09-21T09:59:04Z
+T_prepare_start=2026-09-21T09:59:05+00:00
+T_hot_reached=2026-09-21T09:59:38+00:00
+readiness_at_hot=HOT
+latched_recoverypoint=video-stream-rg-epoch-5 position=295
+T_failure=2026-09-21T09:59:39+00:00
+T_failure_complete=2026-09-21T10:00:10+00:00
+T_recovery_start=2026-09-21T10:00:10+00:00
+T_redis_ready=2026-09-21T10:00:11+00:00
+redis_position_after_promotion=335
+time="2026-09-21T10:00:20Z" level=error msg="criu failed: type RESTORE errno 0"
+RUNC_RESTORE_RC=1
+T_checkpoint_restore_attempt_done=2026-09-21T10:00:23+00:00
+T_video_restored=2026-09-21T10:00:26+00:00
+T_group_ready=2026-09-21T10:00:26+00:00
