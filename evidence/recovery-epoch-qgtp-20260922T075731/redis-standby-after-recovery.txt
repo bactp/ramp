@@ -1,0 +1,12 @@
+# Replication
+role:master
+connected_slaves:0
+master_failover_state:no-failover
+master_replid:48bb199f439354b69a94becddd64a850057a1658
+master_replid2:cae113aba8e86f909ebdb9315a58c7fbb5c6d14d
+master_repl_offset:8478
+second_repl_offset:8479
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:8479
+repl_backlog_histlen:0

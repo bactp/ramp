@@ -1,0 +1,5 @@
+redis_role=master
+redis_restored_position=66
+recovery_point_position=66
+epoch_marker_ramp:epoch:18:position=66
+epoch_marker_ramp:epoch=18

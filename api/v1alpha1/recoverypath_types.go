@@ -20,14 +20,18 @@ const (
 
 // Check names are stable identifiers so operators can reason about them.
 const (
-	CheckTargetClusterReachable    = "TargetClusterReachable"
-	CheckRecoveryPointCommitted    = "RecoveryPointCommitted"
-	CheckVideoCheckpointAvailable  = "VideoCheckpointAvailable"
-	CheckVideoCheckpointStaged     = "VideoCheckpointStaged"
-	CheckRedisStandbyReady         = "RedisStandbyReady"
-	CheckRestoreCapabilityAvailable = "RestoreCapabilityAvailable"
-	CheckTargetResourceReady       = "TargetResourceReady"
-	CheckTargetNamespaceReady      = "TargetNamespaceReady"
+	CheckTargetClusterReachable   = "TargetClusterReachable"
+	CheckRecoveryPointCommitted   = "RecoveryPointCommitted"
+	CheckVideoCheckpointAvailable = "VideoCheckpointAvailable"
+	CheckVideoCheckpointStaged    = "VideoCheckpointStaged"
+	CheckRedisStandbyReady        = "RedisStandbyReady"
+	// CheckRedisEpochArtifactAvailable proves the committed RecoveryPoint has an
+	// IMMUTABLE Redis state to restore from. A synchronized replica is not that:
+	// it keeps moving after the epoch commits.
+	CheckRedisEpochArtifactAvailable = "RedisEpochArtifactAvailable"
+	CheckRestoreCapabilityAvailable  = "RestoreCapabilityAvailable"
+	CheckTargetResourceReady         = "TargetResourceReady"
+	CheckTargetNamespaceReady        = "TargetNamespaceReady"
 )
 
 // TargetPrerequisites are the target-side facts the readiness evaluation needs.

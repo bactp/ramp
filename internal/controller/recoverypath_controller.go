@@ -162,6 +162,40 @@ func (r *RecoveryPathReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
+	// --- redis EPOCH artifact available in the shared store -----------------
+	// This is the check that distinguishes "the target is warm" from "the
+	// committed recovery point is restorable". A synchronized replica satisfies
+	// the first and not the second: it keeps applying the stream after commit,
+	// so once the source advances past P it can no longer produce P.
+	redisKey := ""
+	if rp != nil {
+		if a := rp.RestorableArtifact(rampv1alpha1.ArtifactRedisSnapshot); a != nil {
+			redisKey = strings.TrimPrefix(a.Ref, fmt.Sprintf("minio://%s/", r.Store.Bucket()))
+		}
+	}
+	switch {
+	case rp == nil:
+		ev.add(rampv1alpha1.CheckRedisEpochArtifactAvailable, false, true, "NoRecoveryPoint",
+			"no committed RecoveryPoint to take an artifact from")
+	case redisKey == "":
+		ev.add(rampv1alpha1.CheckRedisEpochArtifactAvailable, false, true, "NoRedisEpochArtifact",
+			"the committed RecoveryPoint carries no immutable redisSnapshot artifact; "+
+				"a live replica cannot serve as the recovery point once the source advances past it")
+	default:
+		oi, ok, err := r.Store.Stat(ctx, redisKey)
+		switch {
+		case err != nil:
+			ev.add(rampv1alpha1.CheckRedisEpochArtifactAvailable, false, true, "ArtifactStoreUnreachable", err.Error())
+		case !ok:
+			ev.add(rampv1alpha1.CheckRedisEpochArtifactAvailable, false, true, "ArtifactMissing",
+				fmt.Sprintf("%s is not present in the artifact store", redisKey))
+		default:
+			ev.add(rampv1alpha1.CheckRedisEpochArtifactAvailable, true, true, "ArtifactPresent",
+				fmt.Sprintf("%s (%d bytes) frozen at logical position %d",
+					oi.Key, oi.SizeBytes, rp.Status.LogicalPosition))
+		}
+	}
+
 	// --- restore capability on the target -----------------------------------
 	// The checkpoint-agent is what stages artifacts onto target nodes and what
 	// the restore step acts through. Its readiness IS the target's restore

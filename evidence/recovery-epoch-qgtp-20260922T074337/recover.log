@@ -1,0 +1,31 @@
+recovering from video-stream-rg-epoch-16 (epoch=16, P=7314, path readiness=WARM)
+video artifact = checkpoint-video-session-57bb79d476-69tjb_ramp-demo-video-2026-09-22T07:43:43Z.tar
+NOTE: path is WARM, not HOT; activation will take longer than estimatedRTO
+T_recovery_start=2026-09-22T07:44:53+00:00
+--- restoring redis from the epoch artifact ---
+restoring redis from epoch=16 position=7314 artifact=minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-16.rdb
+T_redis_restore_start=2026-09-22T07:44:54+00:00
+wrote 353 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-16.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260922T074337/redis-epoch-16.rdb
+-rw-------    1 redis    redis          353 Sep 22 07:44 /data/dump.rdb
+T_redis_ready=2026-09-22T07:44:56+00:00
+redis_role=master
+redis_restored_position=7314
+recovery_point_position=7314
+epoch_marker_ramp:epoch:16:position=7314
+epoch_marker_ramp:epoch=16
+REDIS RESTORED TO EPOCH 16 POSITION 7314 (verified before any application write)
+--- restoring video container from the epoch checkpoint ---
+T_video_restore_start=2026-09-22T07:44:57+00:00
+job.batch/ramp-video-restore condition met
+RESTORE_START=2026-09-22T07:44:59+00:00
+tar: /var/lib/kubelet/checkpoints/checkpoint-video-session-57bb79d476-69tjb_ramp-demo-video-2026-09-22T07\:43\:43Z.tar: Cannot open: No such file or directory
+tar: Error is not recoverable: exiting now
+T_video_ready=2026-09-22T07:49:58+00:00
+video_restored_initial_position=?
+T_group_ready=2026-09-22T07:49:58+00:00
+
+==== recovery of video-stream-rg-epoch-16 ====
+recovery point position P   = 7314
+redis_restored_position=7314
+video restored initial pos  = ?
+WARNING: video restored initial position ? != P=7314

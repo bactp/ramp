@@ -1,0 +1,25 @@
+{
+  "epoch": 17,
+  "recoveryPoint": "video-stream-rg-epoch-17",
+  "P": 110,
+  "Q": 141,
+  "observedLogicalLoss": 31,
+  "liveReplicaAtFailure": 142,
+  "redisRestoredInitial": 110,
+  "videoRestoredInitial": null,
+  "videoProgress": null,
+  "redisAfterResume": 110,
+  "sourceInstance": "f484ea09-71d3-4893-9a89-16c8d19c2450",
+  "restoredInstance": "?",
+  "checks": {
+    "Q > P (the source really advanced past the recovery point)": true,
+    "live replica held Q, not P, at failure time": true,
+    "Redis restored INITIALLY to P (measured before Video started)": true,
+    "Redis did NOT recover to Q": true,
+    "Video restored INITIALLY to P": false,
+    "restored Video is the SAME process instance as the source": false,
+    "both members progress forward from P after recovery": false,
+    "no catch-up burst: restored Video advanced <= 12 positions in ~6 s": false
+  },
+  "pass": false
+}

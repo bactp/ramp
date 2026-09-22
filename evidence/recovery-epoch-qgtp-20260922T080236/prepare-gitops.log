@@ -1,0 +1,11 @@
+T_prepare_start=2026-09-22T08:03:02+00:00
+  updated dr:workload02-dr/video-session/deployment.yaml @ 4a81c04718a7
+  updated dr:workload02-dr/video-session/svc.yaml @ d81eff20dd52
+NAME            SYNC STATUS   HEALTH STATUS
+workload02-dr   Synced        Healthy
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/video-session   0/0     0            0           141m
+
+NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/video-session   NodePort   10.97.18.100   <none>        8080:30808/TCP   143m
+T_prepare_complete=2026-09-22T08:03:05+00:00

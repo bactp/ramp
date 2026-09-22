@@ -11,6 +11,21 @@
 #   liveness      is the stream actually advancing, or frozen at the checkpoint?
 #   consistency   do the two halves of the distributed app still agree?
 #
+# WHAT THIS IS NOT
+# ----------------
+# This is an END-STATE health contract, and it is deliberately NOT the recovery
+# correctness gate. Every check here runs with BOTH members already up, and the
+# restored video member writes its own position into Redis within a second of
+# starting -- so check 7 (video position == redis position) passes just as
+# happily when Redis was recovered to the WRONG state and then overwritten by
+# the restored process. That is precisely how the pre-fix defect stayed
+# invisible.
+#
+# Recovery correctness is established by measuring each member in the window
+# where only that member is running: see scripts/ramp-scenario1/50-recover.sh
+# and 95-qgtp-experiment.sh. Use this script to answer "is the group healthy
+# now", never "was the recovery correct".
+#
 # Exit 0 only if every mandatory check passes.
 set -uo pipefail
 

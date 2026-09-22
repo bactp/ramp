@@ -1,0 +1,40 @@
+recovering from video-stream-rg-epoch-17 (epoch=17, P=110, path readiness=WARM)
+video artifact = checkpoint-video-session-57bb79d476-2d4wb_ramp-demo-video-2026-09-22T07:52:35Z.tar
+NOTE: path is WARM, not HOT; activation will take longer than estimatedRTO
+T_recovery_start=2026-09-22T07:53:46+00:00
+--- restoring redis from the epoch artifact ---
+restoring redis from epoch=17 position=110 artifact=minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-17.rdb
+T_redis_restore_start=2026-09-22T07:53:47+00:00
+wrote 321 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-17.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260922T075230/redis-epoch-17.rdb
+-rw-------    1 redis    redis          321 Sep 22 07:53 /data/dump.rdb
+T_redis_ready=2026-09-22T07:54:07+00:00
+redis_role=master
+redis_restored_position=110
+recovery_point_position=110
+epoch_marker_ramp:epoch:17:position=110
+epoch_marker_ramp:epoch=17
+REDIS RESTORED TO EPOCH 17 POSITION 110 (verified before any application write)
+--- restoring video container from the epoch checkpoint ---
+T_video_restore_start=2026-09-22T07:54:08+00:00
+RESTORE_START=2026-09-22T07:54:11+00:00
+checkpoint extracted: 23 CRIU images
+rootfs image: docker.io/library/python:3.12-slim
+rootfs unpacked from 4 layers
+rootfs entries: 19
+bundle spec written: 12 mounts (6 re-homed), 6 namespaces
+RUNC_RESTORE_START=2026-09-22T07:54:16+00:00
+time="2026-09-22T07:54:16Z" level=warning msg="open /run/criuwork/restore.log: no such file or directory"
+time="2026-09-22T07:54:16Z" level=error msg="criu failed: type RESTORE errno 0"
+RUNC_RESTORE_RC=1
+RUNC_RESTORE_END=2026-09-22T07:54:16+00:00
+ID          PID         STATUS      BUNDLE      CREATED     OWNER
+RESTORE_END=2026-09-22T07:54:16+00:00
+T_video_ready=2026-09-22T07:54:20+00:00
+video_restored_initial_position=?
+T_group_ready=2026-09-22T07:54:20+00:00
+
+==== recovery of video-stream-rg-epoch-17 ====
+recovery point position P   = 110
+redis_restored_position=110
+video restored initial pos  = ?
+WARNING: video restored initial position ? != P=110

@@ -1,0 +1,9 @@
+recoveryPoint=video-stream-rg-epoch-28
+phase when the manager was killed=Quiescing
+application quiesced when the manager was killed=True
+phase after the manager restarted=Failed
+failureReason=EpochInterrupted
+message=the manager process that owned this epoch (runId a064960c-d62f-4d35-acda-c7ef9eeb868f) is gone; it stopped after stage Preparing. An interrupted epoch is never resumed: its completed stages describe an application state that is no longer held.
+application quiesced after restart=False
+application position before=687 after=721
+verdict=PASS

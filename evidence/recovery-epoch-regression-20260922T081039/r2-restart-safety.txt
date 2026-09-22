@@ -1,0 +1,9 @@
+recoveryPoint=video-stream-rg-epoch-27
+phase when the manager was killed=Quiescing
+application quiesced when the manager was killed=True
+phase after the manager restarted=Quiescing
+failureReason=
+message=quiescing the application
+application quiesced after restart=False
+application position before=172 after=477
+verdict=FAIL

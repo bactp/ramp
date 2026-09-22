@@ -1,0 +1,69 @@
+T_epoch_requested=2026-09-22T08:20:21+00:00
+recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-28 created
+waiting for epoch 28 to reach a terminal phase...
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-28","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":28,"maxPositionSkew":0,"quiesceVerifySeconds":25,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:20:21Z"
+  generation: 1
+  name: video-stream-rg-epoch-28
+  namespace: default
+  resourceVersion: "45487627"
+  uid: 7c83f3ba-84c4-4ebb-bad5-524a918efd73
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 28
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 25
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    established: false
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:20:21Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-z5bvg
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:20:36Z"
+    message: the application was released after the epoch was abandoned
+    observedGeneration: 1
+    reason: ResumedAfterAbort
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-22T08:20:36Z"
+    message: 'epoch aborted after stage Preparing: the manager process that owned
+      this epoch (runId a064960c-d62f-4d35-acda-c7ef9eeb868f) is gone; it stopped
+      after stage Preparing. An interrupted epoch is never resumed: its completed
+      stages describe an application state that is no longer held.'
+    observedGeneration: 1
+    reason: EpochInterrupted
+    status: "False"
+    type: Committed
+  failureReason: EpochInterrupted
+  lastSuccessfulStage: Preparing
+  message: 'the manager process that owned this epoch (runId a064960c-d62f-4d35-acda-c7ef9eeb868f)
+    is gone; it stopped after stage Preparing. An interrupted epoch is never resumed:
+    its completed stages describe an application state that is no longer held.'
+  phase: Failed
+  quiesce:
+    quiesced: false
+    resumedAt: "2026-09-22T08:20:36Z"
+  runId: a064960c-d62f-4d35-acda-c7ef9eeb868f
+  timings:
+    prepareStart: "2026-09-22T08:20:21Z"
+    quiesceStart: "2026-09-22T08:20:21Z"
+    resumeTime: "2026-09-22T08:20:36Z"
+  validation:
+    reason: EpochInterrupted
+    validated: false
+T_epoch_observed=2026-09-22T08:20:38+00:00
+recovery_point=video-stream-rg-epoch-28

@@ -1,0 +1,4 @@
+orphan redis artifact created by the aborted epoch: <none>
+usage: rampctl --key <artifact|minio://bucket/key> --out <file> [--sha256 <digest>]
+group's latest recovery point is still: video-stream-rg-epoch-19
+aborted epoch recoveryEligible=Failed/false

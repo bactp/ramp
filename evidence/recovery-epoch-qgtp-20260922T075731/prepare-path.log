@@ -1,0 +1,7 @@
+T_stage_start=2026-09-22T07:57:45+00:00
+staging checkpoint-video-session-57bb79d476-tjt9s_ramp-demo-video-2026-09-22T07:57:37Z.tar (bucket checkpoints) onto workload02:/var/lib/kubelet/checkpoints
+job.batch/ramp-stage-checkpoint-v-537a5b4e created
+job.batch/ramp-stage-checkpoint-v-537a5b4e condition met
+<string>:13: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+staged checkpoint-video-session-57bb79d476-tjt9s_ramp-demo-video-2026-09-22T07:57:37Z.tar -> /staging/checkpoint-video-session-57bb79d476-tjt9s_ramp-demo-video-2026-09-22T07:57:37Z.tar (10442240 bytes)
+T_stage_complete=2026-09-22T07:57:52+00:00

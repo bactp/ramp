@@ -123,7 +123,234 @@ spec:
                 - -u
                 - -c
                 args:
-                - "import socket, select, time, os, json, uuid, hashlib, collections\n\nHOST = os.environ.get(\"REDIS_HOST\", \"redis\")\nPORT = int(os.environ.get(\"REDIS_PORT\", \"6379\"))\nFPT  = int(os.environ.get(\"FRAMES_PER_TICK\", \"30\"))\nPOS_KEY, SESS_KEY = \"ramp:video:position\", \"ramp:video:session\"\nSTATE = \"/tmp/ramp-video-state.json\"\n\ndef resp(*args):\n    out = (\"*%d\\r\\n\" % len(args)).encode()\n    for a in args:\n        b = str(a).encode()\n        out += b\"$%d\\r\\n\" % len(b) + b + b\"\\r\\n\"\n    s = socket.create_connection((HOST, PORT), timeout=3)\n    try:\n        s.sendall(out)\n        reply = s.recv(65536)\n    finally:\n        s.close()\n    # A RESP error is a reply, not a socket failure. Catching only exceptions\n    # made a replica rejecting writes with \"-READONLY ...\" look like a healthy\n    # link, which is exactly the state a half-failed recovery leaves behind.\n    if reply.startswith(b\"-\"):\n        raise RuntimeError(reply.split(b\"\\r\\n\")[0][1:].decode(errors=\"replace\"))\n    return reply\n\n# ---- in-memory ONLY: recoverable solely by container checkpoint -------------\nsession = str(uuid.uuid4())\nframes  = 0\nring    = collections.deque(maxlen=8)\nstarted = time.time()\n\n# ---- Redis-backed: recoverable solely by replication -----------------------\npos = 0\ntry:\n    r = resp(\"GET\", POS_KEY)\n    if r.startswith(b\"$\") and not r.startswith(b\"$-1\"):\n        pos = int(r.split(b\"\\r\\n\")[1]); frames = pos * FPT\n        print(\"resumed cold from redis pos=%d\" % pos, flush=True)\nexcept Exception as e:\n    print(\"redis unavailable at start: %s\" % e, flush=True)\n\n# Single-threaded: select() on the listening socket with a deadline, so the\n# stream ticks on time and requests are served in between. No threads and no\n# child processes keeps the CRIU dump as simple as possible.\nsrv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\nsrv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\nsrv.bind((\"0.0.0.0\", 8080)); srv.listen(16)\nprint(\"video-session up session=%s pos=%d frames=%d serving :8080\" % (session, pos, frames), flush=True)\n\nlinked = True\ndef snapshot():\n    return {\"session\": session, \"position\": pos, \"frames_decoded\": frames,\n            \"frames_per_tick\": FPT, \"ring_head\": ring[-1] if ring else None,\n            \"redis_linked\": linked, \"uptime_s\": round(time.time() - started, 1),\n            \"ts\": time.time()}\n\nnext_tick = time.time() + 1.0\nwhile True:\n    try:\n        r, _, _ = select.select([srv], [], [], max(0.0, next_tick - time.time()))\n    except Exception:\n        r = []\n    if r:\n        try:\n            conn, _ = srv.accept()\n            conn.settimeout(2)\n            try:\n                conn.recv(4096)\n                body = json.dumps(snapshot()).encode()\n                conn.sendall(b\"HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\n\"\n                             b\"Content-Length: \" + str(len(body)).encode() + b\"\\r\\n\"\n                             b\"Connection: close\\r\\n\\r\\n\" + body)\n            finally:\n                conn.close()\n        except Exception:\n            pass\n    if time.time() >= next_tick:\n        next_tick += 1.0\n        pos += 1; frames += FPT\n        ring.append(hashlib.sha256((\"%s:%d\" % (session, pos)).encode()).hexdigest()[:12])\n        linked = True\n        try:\n            resp(\"SET\", POS_KEY, pos); resp(\"SET\", SESS_KEY, session)\n        except Exception as e:\n            linked = False\n            print(\"redis write failed at pos=%d: %s\" % (pos, e), flush=True)\n        try:\n            open(STATE, \"w\").write(json.dumps(snapshot()))\n        except Exception:\n            pass\n        if pos % 30 == 0:\n            print(\"pos=%d frames=%d invariant_ok=%s linked=%s\"\n                  % (pos, frames, frames == pos * FPT, linked), flush=True)\n"
+                - |
+                  """RAMP Scenario 1 demo workload: a video session with heterogeneous state.
+
+                  Two kinds of state live in this process on purpose:
+
+                    * IN-MEMORY ONLY  -- the session uuid, the decoded-frame counter and the hash
+                      ring. Nothing replicates them, so only a container checkpoint can recover
+                      them. The session uuid in particular is generated once at start and never
+                      persisted, which is what makes "was this process restored or restarted?"
+                      a falsifiable question.
+                    * REDIS-BACKED    -- the stream position. Replication alone can recover it.
+
+                  Neither mechanism can recover the other kind of state. That is the reason the
+                  two components form one RecoveryGroup.
+
+                  CONTROL INTERFACE (added for RecoveryEpoch correctness)
+                      QUIESCE    stop advancing the logical position, keep serving
+                      GET_STATE  report position, quiesce flag and instance identity
+                      RESUME     start advancing again
+
+                  The authoritative quiesce flag is the CONTROL FILE, not a variable:
+
+                    * RAMP drives it through the apiserver exec subresource, the only route into
+                      the pod network in this testbed. The HTTP /quiesce and /resume endpoints
+                      write the same file, for humans and for the experiment scripts.
+                    * It survives the checkpoint. A CRI checkpoint carries the container's
+                      writable layer, so a process checkpointed while quiesced is restored STILL
+                      QUIESCED, frozen at exactly the epoch position, and the recovery releases it
+                      explicitly once it has verified both members are at P. Until then the
+                      restored member cannot overwrite the recovered Redis state -- which is what
+                      makes "Redis was restored to P" a checkable claim rather than an assumption.
+                  """
+                  import socket, select, time, os, json, uuid, hashlib, collections
+
+                  HOST = os.environ.get("REDIS_HOST", "redis")
+                  PORT = int(os.environ.get("REDIS_PORT", "6379"))
+                  FPT = int(os.environ.get("FRAMES_PER_TICK", "30"))
+                  TICK = float(os.environ.get("TICK_SECONDS", "1.0"))
+                  POS_KEY, SESS_KEY = "ramp:video:position", "ramp:video:session"
+                  STATE = "/tmp/ramp-video-state.json"
+                  CONTROL = "/tmp/ramp-video-control"
+
+
+                  def resp(*args):
+                      out = ("*%d\r\n" % len(args)).encode()
+                      for a in args:
+                          b = str(a).encode()
+                          out += b"$%d\r\n" % len(b) + b + b"\r\n"
+                      s = socket.create_connection((HOST, PORT), timeout=3)
+                      try:
+                          s.sendall(out)
+                          reply = s.recv(65536)
+                      finally:
+                          s.close()
+                      # A RESP error is a reply, not a socket failure. Catching only exceptions
+                      # made a replica rejecting writes with "-READONLY ..." look like a healthy
+                      # link, which is exactly the state a half-failed recovery leaves behind.
+                      if reply.startswith(b"-"):
+                          raise RuntimeError(reply.split(b"\r\n")[0][1:].decode(errors="replace"))
+                      return reply
+
+
+                  # ---- in-memory ONLY: recoverable solely by container checkpoint -------------
+                  session = str(uuid.uuid4())
+                  frames = 0
+                  ring = collections.deque(maxlen=8)
+                  started = time.time()
+
+                  # ---- Redis-backed: recoverable solely by replication -----------------------
+                  pos = 0
+                  try:
+                      r = resp("GET", POS_KEY)
+                      if r.startswith(b"$") and not r.startswith(b"$-1"):
+                          pos = int(r.split(b"\r\n")[1]); frames = pos * FPT
+                          print("resumed cold from redis pos=%d" % pos, flush=True)
+                  except Exception as e:
+                      print("redis unavailable at start: %s" % e, flush=True)
+
+
+                  def read_control():
+                      """Return (quiesced, epoch). Absent or unreadable control file = running."""
+                      try:
+                          with open(CONTROL) as f:
+                              c = json.load(f)
+                          return bool(c.get("quiesce")), int(c.get("epoch", 0))
+                      except Exception:
+                          return False, 0
+
+
+                  def write_control(quiesce, epoch=0):
+                      if quiesce:
+                          tmp = CONTROL + ".tmp"
+                          with open(tmp, "w") as f:
+                              json.dump({"quiesce": True, "epoch": epoch}, f)
+                          os.replace(tmp, CONTROL)
+                      else:
+                          try:
+                              os.remove(CONTROL)
+                          except FileNotFoundError:
+                              pass
+
+
+                  # A fresh PROCESS start must never inherit a stale quiesce (a crash during an
+                  # epoch would otherwise leave the workload paused forever). A CRIU RESTORE is
+                  # not a process start -- it resumes inside the loop below -- so this does not
+                  # release a restored instance; recovery does that explicitly.
+                  write_control(False)
+                  quiesced, quiesce_epoch = False, 0
+
+                  # Single-threaded: select() on the listening socket with a deadline, so the
+                  # stream ticks on time and requests are served in between. No threads and no
+                  # child processes keeps the CRIU dump as simple as possible.
+                  srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                  srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                  srv.bind(("0.0.0.0", 8080)); srv.listen(16)
+                  print("video-session up session=%s pos=%d frames=%d serving :8080" % (session, pos, frames), flush=True)
+
+                  linked = True
+
+
+                  def snapshot():
+                      return {"session": session, "position": pos, "frames_decoded": frames,
+                              "frames_per_tick": FPT, "ring_head": ring[-1] if ring else None,
+                              "redis_linked": linked, "quiesced": quiesced,
+                              "quiesce_epoch": quiesce_epoch,
+                              "uptime_s": round(time.time() - started, 1), "ts": time.time()}
+
+
+                  def write_state():
+                      try:
+                          tmp = STATE + ".tmp"
+                          with open(tmp, "w") as f:
+                              f.write(json.dumps(snapshot()))
+                          os.replace(tmp, STATE)
+                      except Exception:
+                          pass
+
+
+                  def serve(conn):
+                      """One request, one JSON reply. GET /quiesce | /resume | /state (default)."""
+                      global quiesced, quiesce_epoch
+                      conn.settimeout(2)
+                      try:
+                          req = conn.recv(4096).decode(errors="replace")
+                          line = req.split("\r\n", 1)[0]
+                          parts = line.split(" ")
+                          path = parts[1] if len(parts) > 1 else "/"
+                          target = path.split("?", 1)[0]
+                          if target == "/quiesce":
+                              epoch = 0
+                              if "epoch=" in path:
+                                  try:
+                                      epoch = int(path.split("epoch=", 1)[1].split("&", 1)[0])
+                                  except Exception:
+                                      epoch = 0
+                              write_control(True, epoch)
+                              quiesced, quiesce_epoch = read_control()
+                              write_state()
+                          elif target == "/resume":
+                              write_control(False)
+                              quiesced, quiesce_epoch = read_control()
+                              write_state()
+                          body = json.dumps(snapshot()).encode()
+                          conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                                       b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+                                       b"Connection: close\r\n\r\n" + body)
+                      finally:
+                          conn.close()
+
+
+                  write_state()
+                  last_state_write = time.time()
+
+                  # MONOTONIC, NON-CATCHING-UP SCHEDULE.
+                  #
+                  # The previous `next_tick += TICK` kept an ABSOLUTE schedule: a process frozen
+                  # by CRIU for N seconds executed N catch-up ticks back to back on restore, so a
+                  # restored workload manufactured dozens of logical positions in a few seconds
+                  # and every RPO/recovery measurement taken against the counter measured the
+                  # catch-up instead of the application. The deadline is now recomputed FROM THE
+                  # COMPLETION of each tick, so a pause -- CRIU or quiesce -- costs exactly one
+                  # tick, never a burst.
+                  next_tick = time.time() + TICK
+                  while True:
+                      budget = 0.2 if quiesced else max(0.0, next_tick - time.time())
+                      try:
+                          r, _, _ = select.select([srv], [], [], budget)
+                      except Exception:
+                          r = []
+                      if r:
+                          try:
+                              conn, _ = srv.accept()
+                              serve(conn)
+                          except Exception:
+                              pass
+
+                      q, qe = read_control()
+                      if q != quiesced:
+                          quiesced, quiesce_epoch = q, qe
+                          if not q:
+                              # Resuming starts a fresh interval; it does not replay the pause.
+                              next_tick = time.time() + TICK
+                          print("quiesced=%s epoch=%d pos=%d" % (quiesced, quiesce_epoch, pos), flush=True)
+                          write_state(); last_state_write = time.time()
+                      elif q:
+                          quiesce_epoch = qe
+
+                      if quiesced:
+                          # Keep the observable state fresh so a watcher can see BOTH that the
+                          # application is quiesced and that its position is not moving.
+                          if time.time() - last_state_write > 0.5:
+                              write_state(); last_state_write = time.time()
+                          continue
+
+                      if time.time() >= next_tick:
+                          pos += 1; frames += FPT
+                          ring.append(hashlib.sha256(("%s:%d" % (session, pos)).encode()).hexdigest()[:12])
+                          linked = True
+                          try:
+                              resp("SET", POS_KEY, pos); resp("SET", SESS_KEY, session)
+                          except Exception as e:
+                              linked = False
+                              print("redis write failed at pos=%d: %s" % (pos, e), flush=True)
+                          write_state(); last_state_write = time.time()
+                          next_tick = time.time() + TICK
+                          if pos % 30 == 0:
+                              print("pos=%d frames=%d invariant_ok=%s linked=%s"
+                                    % (pos, frames, frames == pos * FPT, linked), flush=True)
                 ports:
                 - containerPort: 8080
                   name: http

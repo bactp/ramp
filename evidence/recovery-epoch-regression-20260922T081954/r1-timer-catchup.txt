@@ -1,0 +1,6 @@
+position before pause = 682
+position after 20s pause = 682  (must equal 682: a quiesced app does not advance)
+position 5s after resume = 686
+positions gained in the 5s after a 20s pause = 4
+pre-fix behaviour would have been ~25 (one tick per elapsed wall-clock second)
+verdict=PASS

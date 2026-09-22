@@ -1,0 +1,9 @@
+case=test3-video-checkpoint-failure
+recoveryPoint=video-stream-rg-epoch-21
+phase=Failed
+lastSuccessfulStage=BarrierEstablished
+failureReason=RedisSnapshotFailed (expected CheckpointFailed)
+message=faultInjection.failRedisSnapshot: epoch-specific Redis capture forced to fail
+application quiesced after epoch=False
+application position before=29 after=35 (must advance)
+verdict=FAIL

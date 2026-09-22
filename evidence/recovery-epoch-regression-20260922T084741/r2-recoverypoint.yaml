@@ -1,0 +1,64 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-34","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":34,"maxPositionSkew":0,"quiesceVerifySeconds":25,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:48:09Z"
+  generation: 1
+  name: video-stream-rg-epoch-34
+  namespace: default
+  resourceVersion: "45501678"
+  uid: 8d96e203-e24e-4276-b421-b6a5b4d2aa50
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 34
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 25
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    established: false
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:48:09Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-q2r4b
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:48:24Z"
+    message: the application was released after the epoch was abandoned
+    observedGeneration: 1
+    reason: ResumedAfterAbort
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-22T08:48:24Z"
+    message: 'epoch aborted after stage Preparing: the manager process that owned
+      this epoch (runId 0b9616a0-bd33-4120-9e5b-9456797ef3fb) is gone; it stopped
+      after stage Preparing. An interrupted epoch is never resumed: its completed
+      stages describe an application state that is no longer held.'
+    observedGeneration: 1
+    reason: EpochInterrupted
+    status: "False"
+    type: Committed
+  failureReason: EpochInterrupted
+  lastSuccessfulStage: Preparing
+  message: 'the manager process that owned this epoch (runId 0b9616a0-bd33-4120-9e5b-9456797ef3fb)
+    is gone; it stopped after stage Preparing. An interrupted epoch is never resumed:
+    its completed stages describe an application state that is no longer held.'
+  phase: Failed
+  quiesce:
+    quiesced: false
+    resumedAt: "2026-09-22T08:48:24Z"
+  runId: 0b9616a0-bd33-4120-9e5b-9456797ef3fb
+  timings:
+    prepareStart: "2026-09-22T08:48:09Z"
+    quiesceStart: "2026-09-22T08:48:09Z"
+    resumeTime: "2026-09-22T08:48:24Z"
+  validation:
+    reason: EpochInterrupted
+    validated: false

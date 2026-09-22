@@ -111,8 +111,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RecoveryGroup")
 		os.Exit(1)
 	}
+	// One identity per manager process. An epoch stamped with a different one is
+	// an epoch whose owner died mid-flight, and is aborted rather than resumed.
+	runID := controller.NewRunID()
+	setupLog.Info("recovery epoch owner identity", "runId", runID)
 	if err := (&controller.RecoveryPointReconciler{
 		Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Clusters: registry, Store: store,
+		RunID: runID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RecoveryPoint")
 		os.Exit(1)

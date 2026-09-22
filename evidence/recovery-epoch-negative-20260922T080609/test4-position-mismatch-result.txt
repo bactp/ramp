@@ -1,0 +1,9 @@
+case=test4-position-mismatch
+recoveryPoint=video-stream-rg-epoch-21
+phase=Failed
+lastSuccessfulStage=BarrierEstablished
+failureReason=RedisSnapshotFailed (expected ValidationFailed)
+message=faultInjection.failRedisSnapshot: epoch-specific Redis capture forced to fail
+application quiesced after epoch=False
+application position before=35 after=41 (must advance)
+verdict=FAIL

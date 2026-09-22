@@ -26,6 +26,9 @@ spec:
     - jsonPath: .status.phase
       name: Phase
       type: string
+    - jsonPath: .status.logicalPosition
+      name: P
+      type: integer
     - jsonPath: .status.validation.validated
       name: Validated
       type: boolean
@@ -39,8 +42,8 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          RecoveryPoint is a committed set of mutually consistent recovery states for
-          a RecoveryGroup, produced by one Recovery Epoch.
+          RecoveryPoint is a committed set of mutually consistent, immutable recovery
+          artifacts for a RecoveryGroup, produced by one Recovery Epoch.
         properties:
           apiVersion:
             description: |-
@@ -78,18 +81,58 @@ spec:
                 description: Epoch is the monotonically increasing epoch number.
                 format: int64
                 type: integer
+              faultInjection:
+                description: FaultInjection is test-only; see FaultInjection.
+                properties:
+                  failRedisSnapshot:
+                    description: FailRedisSnapshot aborts the epoch during CAPTURE
+                      REDIS.
+                    type: boolean
+                  failVideoCheckpoint:
+                    description: |-
+                      FailVideoCheckpoint aborts the epoch during CAPTURE VIDEO, i.e. AFTER the
+                      Redis epoch artifact already exists.
+                    type: boolean
+                  forcePositionSkew:
+                    description: |-
+                      ForcePositionSkew perturbs the recorded Redis artifact position by this
+                      many logical positions, so VALIDATE sees two artifacts that disagree.
+                    format: int64
+                    type: integer
+                  skipQuiesce:
+                    description: |-
+                      SkipQuiesce runs the epoch the old way -- without pausing the application
+                      -- so the pre-fix behaviour remains reproducible for comparison.
+                    type: boolean
+                type: object
               maxPositionSkew:
-                default: 2
+                default: 0
                 description: |-
                   MaxPositionSkew is the largest tolerated difference, in application
                   logical positions, between the container-checkpoint member's captured
-                  in-memory position and the Redis-committed position. This is the
-                  cross-driver consistency tolerance that makes the epoch meaningful.
+                  in-memory position and the position frozen into the Redis epoch
+                  snapshot. With a real quiesce this is expected to be 0; the knob stays so
+                  that the tolerance is explicit rather than assumed.
                 format: int64
+                type: integer
+              quiesceVerifySeconds:
+                default: 3
+                description: |-
+                  QuiesceVerifySeconds is the interval between the two logical-position
+                  samples that prove the application really stopped advancing.
+                format: int32
                 type: integer
               recoveryGroupRef:
                 description: RecoveryGroupRef is the group this epoch captures.
                 type: string
+              requiredReplicaAcks:
+                default: 1
+                description: |-
+                  RequiredReplicaAcks is the number of replicas that must acknowledge the
+                  epoch marker write before the barrier counts as established. It is passed
+                  to Redis WAIT; connected_replicas is not an acknowledgement.
+                format: int32
+                type: integer
             required:
             - epoch
             - recoveryGroupRef
@@ -106,20 +149,37 @@ spec:
                     capturedAt:
                       format: date-time
                       type: string
+                    checksum:
+                      description: Checksum is the artifact's content digest (algorithm
+                        in ChecksumAlgorithm).
+                      type: string
+                    checksumAlgorithm:
+                      type: string
                     driver:
                       description: |-
                         RecoveryDriver names the recovery mechanism bound to a member. Different
                         members of the same RecoveryGroup deliberately use different drivers -- that
                         heterogeneity is the property Scenario 1 exists to demonstrate.
                       type: string
+                    epoch:
+                      description: |-
+                        Epoch is stamped on every artifact so that "these artifacts belong to the
+                        same recovery epoch" is checkable on the artifact itself, not inferred
+                        from which object happens to carry it.
+                      format: int64
+                      type: integer
+                    immutable:
+                      description: |-
+                        Immutable marks an artifact that cannot change after commit. A
+                        replicationState reference is NOT immutable and is never restorable.
+                      type: boolean
                     instanceFingerprint:
                       description: |-
                         InstanceFingerprint identifies the specific process instance whose state
                         was captured -- for the video member, the session id it generated in
                         memory at start and never persists. After a recovery it is the evidence
                         that distinguishes a genuine restore (same fingerprint) from a restart
-                        that merely re-read the replicated state (new fingerprint). Without it
-                        "the application came back" is unfalsifiable.
+                        that merely re-read the replicated state (new fingerprint).
                       type: string
                     logicalPosition:
                       description: |-
@@ -139,7 +199,8 @@ spec:
                       description: |-
                         Ref is the canonical, resolvable reference to the artifact.
                           containerCheckpoint -> minio://<bucket>/<object>
-                          replicationState    -> redis-repl://<host>:<port>/<offset>
+                          redisSnapshot       -> minio://<bucket>/<object>
+                          replicationState    -> redis-repl://<host>:<port>/<offset>  (diagnostic)
                       type: string
                     replicationId:
                       type: string
@@ -159,6 +220,40 @@ spec:
                   - type
                   type: object
                 type: array
+              barrier:
+                description: BarrierStatus records the Redis replication acknowledgement
+                  for this epoch.
+                properties:
+                  ackedReplicas:
+                    description: AckedReplicas is what Redis WAIT actually returned.
+                    format: int64
+                    type: integer
+                  endpoint:
+                    description: Endpoint is the primary the marker was written to.
+                    type: string
+                  established:
+                    type: boolean
+                  establishedAt:
+                    format: date-time
+                    type: string
+                  markerOffset:
+                    description: |-
+                      MarkerOffset is the primary replication offset immediately after the
+                      epoch marker keys were written.
+                    format: int64
+                    type: integer
+                  message:
+                    type: string
+                  position:
+                    format: int64
+                    type: integer
+                  replicationId:
+                    type: string
+                  requiredReplicas:
+                    description: RequiredReplicas is what was demanded.
+                    format: int64
+                    type: integer
+                type: object
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -215,14 +310,65 @@ spec:
                   - type
                   type: object
                 type: array
+              failureReason:
+                type: string
+              lastSuccessfulStage:
+                description: |-
+                  LastSuccessfulStage is the furthest phase that completed. On a failure it
+                  is what tells an operator where the epoch stopped.
+                type: string
+              logicalPosition:
+                description: |-
+                  LogicalPosition is P: the single application position this whole epoch
+                  is anchored to.
+                format: int64
+                type: integer
               message:
                 type: string
               phase:
                 description: "RecoveryPointPhase is the Recovery Epoch state machine.
-                  The order is fixed:\n\n\tPending -> Preparing -> Quiescing -> Capturing
-                  -> Validating -> Committed\n\nAny failure short-circuits to Failed.
-                  ONLY Committed+validated is recovery\neligible; every other phase
-                  is explicitly not."
+                  The order is fixed:\n\n\tPending -> Preparing -> Quiescing -> BarrierEstablished\n\t
+                  \       -> CapturingRedis -> CapturingVideo -> Validating -> Committed\n\nAny
+                  failure short-circuits through Aborting to Failed. ONLY Committed+validated\nis
+                  recovery eligible; every other phase is explicitly not."
+                type: string
+              quiesce:
+                description: |-
+                  QuiesceStatus records that the application really was held still, and for
+                  how long. Without it "the artifacts agree" is an accident, not a property.
+                properties:
+                  instanceFingerprint:
+                    type: string
+                  message:
+                    type: string
+                  position:
+                    description: Position is the logical position P the application
+                      was frozen at.
+                    format: int64
+                    type: integer
+                  quiesced:
+                    type: boolean
+                  quiescedAt:
+                    format: date-time
+                    type: string
+                  resumedAt:
+                    format: date-time
+                    type: string
+                  verifySamples:
+                    description: |-
+                      VerifySamples are the two (or more) successive position samples taken
+                      while quiesced; they must all be equal.
+                    items:
+                      format: int64
+                      type: integer
+                    type: array
+                type: object
+              runId:
+                description: |-
+                  RunID is the manager instance that owns the in-flight epoch. If a
+                  reconcile finds a mid-flight epoch stamped with a different RunID the
+                  manager restarted mid-epoch, and the epoch is aborted rather than resumed
+                  against an application that has since moved on.
                 type: string
               timings:
                 description: EpochTimings records stage boundaries for the RTO/RPO
@@ -243,7 +389,28 @@ spec:
                   prepareStart:
                     format: date-time
                     type: string
+                  quiesceComplete:
+                    format: date-time
+                    type: string
+                  quiesceStart:
+                    format: date-time
+                    type: string
+                  redisSnapshotComplete:
+                    format: date-time
+                    type: string
+                  redisSnapshotStart:
+                    format: date-time
+                    type: string
+                  resumeTime:
+                    format: date-time
+                    type: string
                   validateComplete:
+                    format: date-time
+                    type: string
+                  videoCheckpointComplete:
+                    format: date-time
+                    type: string
+                  videoCheckpointStart:
                     format: date-time
                     type: string
                 type: object
@@ -253,6 +420,22 @@ spec:
                   checkpointPosition:
                     format: int64
                     type: integer
+                  checks:
+                    description: Checks is the per-condition validation record.
+                    items:
+                      description: ValidationCheck is one mandatory pre-commit condition.
+                      properties:
+                        detail:
+                          type: string
+                        name:
+                          type: string
+                        passed:
+                          type: boolean
+                      required:
+                      - name
+                      - passed
+                      type: object
+                    type: array
                   message:
                     type: string
                   observedSkew:
@@ -260,7 +443,16 @@ spec:
                     type: integer
                   reason:
                     type: string
+                  redisSnapshotPosition:
+                    description: |-
+                      RedisSnapshotPosition is the position frozen into the immutable Redis
+                      artifact -- NOT the live replica's current position.
+                    format: int64
+                    type: integer
                   replicatedPosition:
+                    description: |-
+                      ReplicatedPosition is the live replication-stream position at commit,
+                      kept as a diagnostic only.
                     format: int64
                     type: integer
                   validated:

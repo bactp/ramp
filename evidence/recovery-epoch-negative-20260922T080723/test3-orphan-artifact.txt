@@ -1,0 +1,4 @@
+orphan redis artifact created by the aborted epoch: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-24.rdb
+wrote 425 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-24.rdb to /dev/null
+group's latest recovery point is still: video-stream-rg-epoch-19
+aborted epoch recoveryEligible=Failed/false

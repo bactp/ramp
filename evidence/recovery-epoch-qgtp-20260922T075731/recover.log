@@ -1,0 +1,28 @@
+recovering from video-stream-rg-epoch-18 (epoch=18, P=66, path readiness=WARM)
+video checkpoint image = docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-18
+T_recovery_start=2026-09-22T07:58:56+00:00
+--- restoring redis from the epoch artifact ---
+restoring redis from epoch=18 position=66 artifact=minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-18.rdb
+T_redis_restore_start=2026-09-22T07:58:57+00:00
+wrote 321 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-18.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260922T075731/redis-epoch-18.rdb
+-rw-------    1 redis    redis          321 Sep 22 07:58 /data/dump.rdb
+T_redis_ready=2026-09-22T07:59:23+00:00
+redis_role=master
+redis_restored_position=66
+recovery_point_position=66
+epoch_marker_ramp:epoch:18:position=66
+epoch_marker_ramp:epoch=18
+REDIS RESTORED TO EPOCH 18 POSITION 66 (verified before any application write)
+--- restoring video container from the epoch checkpoint image ---
+T_video_restore_start=2026-09-22T07:59:24+00:00
+T_activation_committed=2026-09-22T07:59:26+00:00
+T_video_pod_ready=2026-09-22T07:59:30+00:00
+T_video_ready=2026-09-22T07:59:31+00:00
+T_group_ready=2026-09-22T07:59:37+00:00
+video_restored_initial_position=66
+
+==== recovery of video-stream-rg-epoch-18 ====
+recovery point position P   = 66
+redis_restored_position=66
+video restored initial pos  = 66
+VIDEO RESTORED AT P

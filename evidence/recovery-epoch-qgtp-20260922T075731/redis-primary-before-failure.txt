@@ -1,0 +1,13 @@
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=10.244.0.0,port=6379,state=online,offset=13403,lag=1
+master_failover_state:no-failover
+master_replid:cae113aba8e86f909ebdb9315a58c7fbb5c6d14d
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:13532
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:13532

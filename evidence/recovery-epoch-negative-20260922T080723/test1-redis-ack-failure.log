@@ -1,0 +1,93 @@
+T_epoch_requested=2026-09-22T08:07:28+00:00
+recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-22 created
+waiting for epoch 22 to reach a terminal phase...
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-22","namespace":"default"},"spec":{"barrierTimeoutSeconds":10,"captureTimeoutSeconds":300,"epoch":22,"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:07:28Z"
+  generation: 1
+  name: video-stream-rg-epoch-22
+  namespace: default
+  resourceVersion: "45481192"
+  uid: 027973a7-2bb6-4ba5-8304-ac9538ff8aa8
+spec:
+  barrierTimeoutSeconds: 10
+  captureTimeoutSeconds: 300
+  epoch: 22
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    endpoint: 192.168.28.238:30379
+    established: false
+    markerOffset: 8309
+    position: 66
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:07:28Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=0; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-z5bvg
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:07:33Z"
+    message: position held at 66 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-22T08:07:43Z"
+    message: 'replication barrier not acknowledged: WAIT 1 returned 0 on 192.168.28.238:30379
+      within 10s'
+    observedGeneration: 1
+    reason: ReplicaAckNotAchieved
+    status: "False"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-22T08:07:43Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-22T08:07:43Z"
+    message: 'epoch aborted after stage Quiescing: replication barrier not acknowledged:
+      WAIT 1 returned 0 on 192.168.28.238:30379 within 10s'
+    observedGeneration: 1
+    reason: ReplicaAckNotAchieved
+    status: "False"
+    type: Committed
+  failureReason: ReplicaAckNotAchieved
+  lastSuccessfulStage: Quiescing
+  logicalPosition: 66
+  message: 'replication barrier not acknowledged: WAIT 1 returned 0 on 192.168.28.238:30379
+    within 10s'
+  phase: Failed
+  quiesce:
+    instanceFingerprint: 5ad2f48c-d435-483c-bd13-44ee39afa759
+    message: position held at 66 across 2 samples 3s apart
+    position: 66
+    quiesced: false
+    quiescedAt: "2026-09-22T08:07:33Z"
+    resumedAt: "2026-09-22T08:07:43Z"
+    verifySamples:
+    - 66
+    - 66
+  runId: 70f294c8-030b-45be-aa72-9c8804ee37aa
+  timings:
+    prepareStart: "2026-09-22T08:07:28Z"
+    quiesceComplete: "2026-09-22T08:07:33Z"
+    quiesceStart: "2026-09-22T08:07:28Z"
+    resumeTime: "2026-09-22T08:07:43Z"
+  validation:
+    reason: ReplicaAckNotAchieved
+    validated: false
+T_epoch_observed=2026-09-22T08:07:43+00:00
+recovery_point=video-stream-rg-epoch-22

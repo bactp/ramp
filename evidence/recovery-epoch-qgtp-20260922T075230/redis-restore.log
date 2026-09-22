@@ -1,0 +1,11 @@
+restoring redis from epoch=17 position=110 artifact=minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-17.rdb
+T_redis_restore_start=2026-09-22T07:53:47+00:00
+wrote 321 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-17.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260922T075230/redis-epoch-17.rdb
+-rw-------    1 redis    redis          321 Sep 22 07:53 /data/dump.rdb
+T_redis_ready=2026-09-22T07:54:07+00:00
+redis_role=master
+redis_restored_position=110
+recovery_point_position=110
+epoch_marker_ramp:epoch:17:position=110
+epoch_marker_ramp:epoch=17
+REDIS RESTORED TO EPOCH 17 POSITION 110 (verified before any application write)

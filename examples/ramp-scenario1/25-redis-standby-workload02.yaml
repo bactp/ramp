@@ -1,13 +1,27 @@
 # Target-cluster (workload02) recovery prerequisites.
 # These are NOT AppBundle components of the source application: they are the
 # target-side half of the RecoveryPath. Redis recovers by its OWN native
-# mechanism (replication), not by container checkpoint -- that heterogeneity is
-# the research property Scenario 1 must demonstrate.
+# mechanism, not by container checkpoint -- that heterogeneity is the research
+# property Scenario 1 must demonstrate.
 #
 # Replication target address: workload01 NodePort 30379 reached through the
 # workload01 control-plane FLOATING IP. The workload node network 10.6.0.0/24 is
 # not routable between clusters (see 00-existing-system-audit.md Sec.1.1);
 # 192.168.28.0/24 is the only shared transit network.
+#
+# TWO CHANGES for RecoveryEpoch correctness closure:
+#
+#  1. /data is an emptyDir. Restoring a RecoveryPoint means loading THAT EPOCH's
+#     immutable RDB, and Redis only loads an RDB at startup -- so the file has
+#     to survive the container restart that loads it. Without a volume the
+#     restarted container gets a fresh writable layer and the artifact is gone.
+#
+#  2. `--replicaof` is NOT passed at startup any more; replication is
+#     established at runtime by scripts/ramp-scenario1/10-reset.sh. Reason: a
+#     replica that re-attaches on boot would full-resync from the primary and
+#     immediately discard the epoch RDB it was just restored from, i.e. the
+#     recovery would silently become "whatever the primary has now" -- exactly
+#     the defect this work exists to remove.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,6 +37,9 @@ spec:
     metadata:
       labels: {app: redis-standby, ramp.dcn.ssu.ac.kr/role: redis-standby}
     spec:
+      volumes:
+        - name: data
+          emptyDir: {}
       containers:
         - name: redis
           image: redis:7-alpine
@@ -33,11 +50,14 @@ spec:
             - "no"
             - --protected-mode
             - "no"
-            - --replicaof
-            - "192.168.28.238"
-            - "30379"
             - --replica-read-only
             - "yes"
+            - --dir
+            - /data
+            - --dbfilename
+            - dump.rdb
+          volumeMounts:
+            - {name: data, mountPath: /data}
           ports:
             - {containerPort: 6379, name: redis}
           readinessProbe:

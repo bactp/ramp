@@ -1,0 +1,13 @@
+RESTORE_START=2026-09-22T07:54:11+00:00
+checkpoint extracted: 23 CRIU images
+rootfs image: docker.io/library/python:3.12-slim
+rootfs unpacked from 4 layers
+rootfs entries: 19
+bundle spec written: 12 mounts (6 re-homed), 6 namespaces
+RUNC_RESTORE_START=2026-09-22T07:54:16+00:00
+time="2026-09-22T07:54:16Z" level=warning msg="open /run/criuwork/restore.log: no such file or directory"
+time="2026-09-22T07:54:16Z" level=error msg="criu failed: type RESTORE errno 0"
+RUNC_RESTORE_RC=1
+RUNC_RESTORE_END=2026-09-22T07:54:16+00:00
+ID          PID         STATUS      BUNDLE      CREATED     OWNER
+RESTORE_END=2026-09-22T07:54:16+00:00

@@ -1,5 +1,15 @@
 # 04 — Results
 
+> **Superseded in part.** The RecoveryEpoch semantics this run measured were
+> incorrect: the epoch did not quiesce the application, and the Redis half of a
+> RecoveryPoint was a pointer at a live replica rather than an immutable
+> artifact. The RPO/recovery numbers below were also taken against a workload
+> whose timer replayed one tick per second of downtime. See
+> [recovery-epoch-correctness-audit.md](recovery-epoch-correctness-audit.md),
+> [recovery-epoch-protocol.md](recovery-epoch-protocol.md) and
+> [recovery-epoch-correctness-results.md](recovery-epoch-correctness-results.md).
+> The readiness/RecoveryPath findings in this document still hold.
+
 Reference run: `evidence/scenario1/run-20260921T095857/`, executed by
 `scripts/ramp-scenario1/00-run-scenario.sh` on 2026-09-21.
 

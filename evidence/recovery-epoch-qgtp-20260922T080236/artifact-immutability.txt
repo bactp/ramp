@@ -1,0 +1,49 @@
+wrote 321 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-19.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260922T080236/redis-epoch-artifact-recheck.rdb
+redis artifact sha256 still 7ee73dc7a33480547205d8239bdc836da8ebe0b151a78ca228636c4a0c07e42a after source advanced to >= 122
+[
+    {
+        "capturedAt": "2026-09-22T08:02:40Z",
+        "checksum": "7ee73dc7a33480547205d8239bdc836da8ebe0b151a78ca228636c4a0c07e42a",
+        "checksumAlgorithm": "sha256",
+        "driver": "redis-replication",
+        "epoch": 19,
+        "immutable": true,
+        "logicalPosition": 102,
+        "member": "redis",
+        "message": "synchronous SAVE on the quiesced primary ramp-demo/redis-primary-579fc4d97c-6bdp4; BGSAVE_STATUS=ok SIZE=321 ",
+        "ref": "minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-19.rdb",
+        "replicationId": "d0c091e33a636b736a989d30201b581d7fbbb1c6",
+        "replicationOffset": 16335,
+        "sizeBytes": 321,
+        "type": "redisSnapshot"
+    },
+    {
+        "capturedAt": "2026-09-22T08:02:40Z",
+        "driver": "redis-replication",
+        "epoch": 19,
+        "logicalPosition": 102,
+        "member": "redis",
+        "message": "DIAGNOSTIC ONLY: the live stream keeps advancing after commit and cannot identify this epoch; recovery uses the redisSnapshot artifact",
+        "ref": "redis-repl://192.168.28.238:30379/16335",
+        "replicationId": "d0c091e33a636b736a989d30201b581d7fbbb1c6",
+        "replicationOffset": 16335,
+        "type": "replicationState"
+    },
+    {
+        "capturedAt": "2026-09-22T08:02:42Z",
+        "checksum": "64f26f77aec4240ea4917f7f55807888",
+        "checksumAlgorithm": "etag-md5",
+        "driver": "container-checkpoint",
+        "epoch": 19,
+        "immutable": true,
+        "instanceFingerprint": "c47fd89d-7047-4212-b24a-77d0e486ffed",
+        "logicalPosition": 102,
+        "member": "video",
+        "message": "kubelet checkpoint took 1.515s while quiesced=true; instance c47fd89d-7047-4212-b24a-77d0e486ffed",
+        "nodeName": "workload01-md-0-4qfvd-gnqcb",
+        "nodePath": "/var/lib/kubelet/checkpoints/checkpoint-video-session-5c6684c9b7-8lll4_ramp-demo-video-2026-09-22T08:02:41Z.tar",
+        "ref": "minio://checkpoints/checkpoint-video-session-5c6684c9b7-8lll4_ramp-demo-video-2026-09-22T08:02:41Z.tar",
+        "sizeBytes": 10475520,
+        "type": "containerCheckpoint"
+    }
+]

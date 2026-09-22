@@ -1,0 +1,88 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-30","namespace":"default"},"spec":{"barrierTimeoutSeconds":10,"captureTimeoutSeconds":300,"epoch":30,"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:46:38Z"
+  generation: 1
+  name: video-stream-rg-epoch-30
+  namespace: default
+  resourceVersion: "45500897"
+  uid: d7e16205-c31c-456f-8d9a-7f2bd73f30c9
+spec:
+  barrierTimeoutSeconds: 10
+  captureTimeoutSeconds: 300
+  epoch: 30
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    endpoint: 192.168.28.238:30379
+    established: false
+    markerOffset: 955
+    position: 8
+    replicationId: 0a26d8ade955d288b014d3830f103408cde831cb
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:46:38Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=0; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-q2r4b
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:46:42Z"
+    message: position held at 8 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-22T08:46:52Z"
+    message: 'replication barrier not acknowledged: WAIT 1 returned 0 on 192.168.28.238:30379
+      within 10s'
+    observedGeneration: 1
+    reason: ReplicaAckNotAchieved
+    status: "False"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-22T08:46:53Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-22T08:46:53Z"
+    message: 'epoch aborted after stage Quiescing: replication barrier not acknowledged:
+      WAIT 1 returned 0 on 192.168.28.238:30379 within 10s'
+    observedGeneration: 1
+    reason: ReplicaAckNotAchieved
+    status: "False"
+    type: Committed
+  failureReason: ReplicaAckNotAchieved
+  lastSuccessfulStage: Quiescing
+  logicalPosition: 8
+  message: 'replication barrier not acknowledged: WAIT 1 returned 0 on 192.168.28.238:30379
+    within 10s'
+  phase: Failed
+  quiesce:
+    instanceFingerprint: 2fb624e4-3392-4da7-8d57-caf4c4951412
+    message: position held at 8 across 2 samples 3s apart
+    position: 8
+    quiesced: false
+    quiescedAt: "2026-09-22T08:46:42Z"
+    resumedAt: "2026-09-22T08:46:53Z"
+    verifySamples:
+    - 8
+    - 8
+  runId: 0b9616a0-bd33-4120-9e5b-9456797ef3fb
+  timings:
+    prepareStart: "2026-09-22T08:46:38Z"
+    quiesceComplete: "2026-09-22T08:46:42Z"
+    quiesceStart: "2026-09-22T08:46:38Z"
+    resumeTime: "2026-09-22T08:46:53Z"
+  validation:
+    reason: ReplicaAckNotAchieved
+    validated: false

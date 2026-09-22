@@ -1,0 +1,9 @@
+building docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-29 from checkpoint-video-session-5c6684c9b7-z5bvg_ramp-demo-video-2026-09-22T08:44:39Z.tar on workload02-md-0-rx5mn-pjkrh
+  rewrote rootfs fields -> name=docker.io/library/python:3.12-slim ref=docker.io/library/python:3.12-slim
+built OCI checkpoint image archive: /tmp/ramp-ckptimg-celn19um/image.tar (layer 2.7 MB)
+  rootfsImageName = docker.io/library/python:3.12-slim
+  container.name  = docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-29
+docker.io/ramp/checkpoint video session:	saved	
+application/vnd.oci.image.manifest.v1+json sha256:1dc157f8dad43f97358deefdb60ba80a94a7223d2e7b238c2c01edfb11ccf4b9
+Importing	elapsed: 0.4 s	total:   0.0 B	(0.0 B/s)
+imported docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-29

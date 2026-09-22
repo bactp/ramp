@@ -1,0 +1,9 @@
+case=test2-redis-snapshot-failure
+recoveryPoint=video-stream-rg-epoch-21
+phase=Failed
+lastSuccessfulStage=BarrierEstablished
+failureReason=RedisSnapshotFailed (expected RedisSnapshotFailed)
+message=faultInjection.failRedisSnapshot: epoch-specific Redis capture forced to fail
+application quiesced after epoch=False
+application position before=21 after=29 (must advance)
+verdict=PASS

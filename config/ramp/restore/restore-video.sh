@@ -62,11 +62,26 @@ done
 
 runc list 2>/dev/null || true
 if [ "$RC" -eq 0 ]; then
-  sleep 4
-  echo "--- restored in-memory state (read from the live restored container) ---"
-  runc exec "$CTR_ID" cat /tmp/ramp-video-state.json 2>/dev/null \
-    || cat "$W/bundle/rootfs/tmp/ramp-video-state.json" 2>/dev/null \
-    || echo "state file unreadable"
+  # INITIAL restored state, read as early as possible.
+  #
+  # The process was checkpointed while QUIESCED, and a CRIU restore gives it a
+  # fresh rootfs in which the quiesce control file does not exist. Its first
+  # loop iteration therefore observes "resume", rewrites the state file at the
+  # checkpointed position, and only then schedules its next tick. That is what
+  # makes an INITIAL restored position observable at all: waiting for the first
+  # tick would already report P+1 and there would be no way to distinguish
+  # "restored at P" from "restarted and read P+1 out of Redis".
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    S=$(runc exec "$CTR_ID" cat /tmp/ramp-video-state.json 2>/dev/null) && [ -n "$S" ] && break
+    sleep 0.3
+  done
+  echo "--- VIDEO_INITIAL_STATE ---"
+  echo "${S:-state file unreadable}"
+  # And again after a few seconds, as evidence the restored process progresses
+  # one position per tick instead of replaying the pause.
+  sleep 6
+  echo "--- VIDEO_PROGRESS_STATE ---"
+  runc exec "$CTR_ID" cat /tmp/ramp-video-state.json 2>/dev/null || echo "state file unreadable"
 fi
 echo "RESTORE_END=$(date -Is)"
 exit 0

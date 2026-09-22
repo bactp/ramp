@@ -1,0 +1,9 @@
+recoveryPoint=video-stream-rg-epoch-9
+phase when the manager was killed=Committed
+application quiesced when the manager was killed=True
+phase after the manager restarted=Committed
+failureReason=
+message=epoch 9 committed with 2 heterogeneous artifacts
+application quiesced after restart=False
+application position before=143 after=152
+verdict=FAIL

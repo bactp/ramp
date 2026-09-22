@@ -24,11 +24,22 @@ const DialTimeout = 5 * time.Second
 // Client is a single-shot connection to one Redis endpoint.
 type Client struct {
 	addr string
+	// deadline is the per-command I/O deadline. It is per-client rather than
+	// global so that WAIT -- which is supposed to block server-side -- can be
+	// given room without loosening every readiness probe.
+	deadline time.Duration
 }
 
 // New returns a client for host:port.
 func New(host string, port int32) *Client {
-	return &Client{addr: net.JoinHostPort(host, strconv.Itoa(int(port)))}
+	return &Client{addr: net.JoinHostPort(host, strconv.Itoa(int(port))), deadline: DialTimeout}
+}
+
+// WithDeadline returns a copy of the client using a different I/O deadline.
+func (c *Client) WithDeadline(d time.Duration) *Client {
+	cp := *c
+	cp.deadline = d
+	return &cp
 }
 
 // Addr is the endpoint this client talks to.
@@ -51,44 +62,48 @@ func (c *Client) Do(args ...string) (value string, present bool, err error) {
 		return "", false, fmt.Errorf("dial %s: %w", c.addr, err)
 	}
 	defer conn.Close()
-	_ = conn.SetDeadline(time.Now().Add(DialTimeout))
+	_ = conn.SetDeadline(time.Now().Add(c.effectiveDeadline()))
 
 	if _, err := conn.Write(encode(args...)); err != nil {
 		return "", false, fmt.Errorf("write %s: %w", c.addr, err)
 	}
 
-	r := bufio.NewReader(conn)
+	return readReply(bufio.NewReader(conn), c.addr)
+}
+
+// readReply decodes one RESP reply.
+func readReply(r *bufio.Reader, addr string) (value string, present bool, err error) {
 	line, err := r.ReadString('\n')
 	if err != nil {
-		return "", false, fmt.Errorf("read %s: %w", c.addr, err)
+		return "", false, fmt.Errorf("read %s: %w", addr, err)
 	}
 	line = strings.TrimRight(line, "\r\n")
 	if line == "" {
-		return "", false, fmt.Errorf("empty reply from %s", c.addr)
+		return "", false, fmt.Errorf("empty reply from %s", addr)
 	}
 
 	switch line[0] {
 	case '+': // simple string
 		return line[1:], true, nil
 	case '-': // error
-		return "", false, fmt.Errorf("redis error from %s: %s", c.addr, line[1:])
+		return "", false, fmt.Errorf("redis error from %s: %s", addr, line[1:])
 	case ':': // integer
 		return line[1:], true, nil
 	case '$': // bulk string
 		n, convErr := strconv.Atoi(line[1:])
 		if convErr != nil {
-			return "", false, fmt.Errorf("bad bulk header %q from %s", line, c.addr)
+			return "", false, fmt.Errorf("bad bulk header %q from %s", line, addr)
 		}
 		if n < 0 {
 			return "", false, nil // nil bulk: key absent
 		}
 		buf := make([]byte, n+2) // payload + CRLF
 		if _, err := readFull(r, buf); err != nil {
-			return "", false, fmt.Errorf("read bulk %s: %w", c.addr, err)
+			return "", false, fmt.Errorf("read bulk %s: %w", addr, err)
 		}
 		return string(buf[:n]), true, nil
 	default:
-		return "", false, fmt.Errorf("unsupported reply type %q from %s", line[0], c.addr)
+		return "", false, fmt.Errorf("unsupported reply type %q from %s", line[0], addr)
 	}
 }
 
@@ -102,6 +117,45 @@ func readFull(r *bufio.Reader, buf []byte) (int, error) {
 		}
 	}
 	return total, nil
+}
+
+func (c *Client) effectiveDeadline() time.Duration {
+	if c.deadline <= 0 {
+		return DialTimeout
+	}
+	return c.deadline
+}
+
+// Pipeline issues several commands on ONE connection and returns their replies
+// in order. This is what makes a replication barrier meaningful: the epoch
+// marker SETs and the WAIT that acknowledges them have to travel on the same
+// connection, because WAIT only accounts for writes issued on it.
+func (c *Client) Pipeline(deadline time.Duration, cmds [][]string) ([]string, error) {
+	conn, err := net.DialTimeout("tcp", c.addr, DialTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("dial %s: %w", c.addr, err)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(deadline))
+
+	var out []byte
+	for _, cmd := range cmds {
+		out = append(out, encode(cmd...)...)
+	}
+	if _, err := conn.Write(out); err != nil {
+		return nil, fmt.Errorf("write %s: %w", c.addr, err)
+	}
+
+	r := bufio.NewReader(conn)
+	replies := make([]string, 0, len(cmds))
+	for i := range cmds {
+		v, _, err := readReply(r, c.addr)
+		if err != nil {
+			return replies, fmt.Errorf("command %v on %s: %w", cmds[i], c.addr, err)
+		}
+		replies = append(replies, v)
+	}
+	return replies, nil
 }
 
 // GetInt reads a key expected to hold a base-10 integer.

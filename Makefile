@@ -2,8 +2,9 @@ CONTROLLER_GEN ?= $(shell pwd)/bin/controller-gen
 CONTROLLER_TOOLS_VERSION ?= v0.17.2
 
 .PHONY: build
-build: ## Build the RAMP manager binary.
+build: ## Build the RAMP binaries.
 	go build -o bin/ramp-manager ./cmd/manager
+	go build -o bin/rampctl ./cmd/rampctl
 
 .PHONY: vet
 vet:

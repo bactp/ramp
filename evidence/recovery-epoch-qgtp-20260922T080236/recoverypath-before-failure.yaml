@@ -1,0 +1,117 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPath
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPath","metadata":{"annotations":{},"name":"video-workload01-to-workload02","namespace":"default"},"spec":{"recoveryActions":["promote redis standby on workload02 (REPLICAOF NO ONE)","verify redis role=master and logical position \u003e= recovery point position","restore video container from the staged checkpoint artifact","verify the restored video position is consistent with redis","switch service traffic to workload02"],"recoveryGroupRef":"video-stream-rg","sourceCluster":"workload01","targetCluster":"workload02","targetPrereqs":{"checkpointStagingPath":"/var/lib/kubelet/checkpoints","maxReplicationLagBytes":4096,"minAllocatableCpuMillis":2000,"minAllocatableMemoryMiB":2048,"namespace":"ramp-demo","restoreCapabilityDaemonSet":{"name":"checkpoint-agent","namespace":"kube-system"},"standbyEndpoint":{"host":"192.168.28.122","port":30380}}}}
+  creationTimestamp: "2026-09-21T09:25:52Z"
+  generation: 1
+  name: video-workload01-to-workload02
+  namespace: default
+  resourceVersion: "45478873"
+  uid: 568b27a1-80ea-4add-abad-187120ed2f0c
+spec:
+  recoveryActions:
+  - promote redis standby on workload02 (REPLICAOF NO ONE)
+  - verify redis role=master and logical position >= recovery point position
+  - restore video container from the staged checkpoint artifact
+  - verify the restored video position is consistent with redis
+  - switch service traffic to workload02
+  recoveryGroupRef: video-stream-rg
+  sourceCluster: workload01
+  targetCluster: workload02
+  targetPrereqs:
+    checkpointStagingPath: /var/lib/kubelet/checkpoints
+    maxReplicationLagBytes: 4096
+    minAllocatableCpuMillis: 2000
+    minAllocatableMemoryMiB: 2048
+    namespace: ramp-demo
+    restoreCapabilityDaemonSet:
+      name: checkpoint-agent
+      namespace: kube-system
+    standbyEndpoint:
+      host: 192.168.28.122
+      port: 30380
+status:
+  checks:
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: epoch 19 committed at 2026-09-22T08:02:46Z, cross-driver skew 0
+    name: RecoveryPointCommitted
+    reason: Committed
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: ramp-redis-epoch/video-stream-rg-epoch-19.rdb (321 bytes) frozen at logical
+      position 102
+    name: RedisEpochArtifactAvailable
+    reason: ArtifactPresent
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: standby 192.168.28.122:30380 role=slave link=up ackedOffset=18814 logicalPosition=121
+      lastIO=0s
+    name: RedisStandbyReady
+    reason: StandbySynchronized
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: kube-system/checkpoint-agent ready on 2/2 nodes
+    name: RestoreCapabilityAvailable
+    reason: AgentReady
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: 2/2 nodes Ready on workload02
+    name: TargetClusterReachable
+    reason: NodesReady
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: namespace "ramp-demo" is Active on workload02
+    name: TargetNamespaceReady
+    reason: NamespaceActive
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: 'best target node allocatable: 8000m CPU, 15888MiB memory (required 2000m
+      / 2048MiB)'
+    name: TargetResourceReady
+    reason: AllocatableChecked
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: checkpoint-video-session-5c6684c9b7-8lll4_ramp-demo-video-2026-09-22T08:02:41Z.tar
+      (10475520 bytes) present in bucket checkpoints
+    name: VideoCheckpointAvailable
+    reason: ArtifactPresent
+    status: "True"
+  - lastProbeTime: "2026-09-22T08:03:06Z"
+    mandatory: true
+    message: staging probe ramp-demo/ramp-stage-video-workload01-to-workload02-0a69402e
+      is Pending
+    name: VideoCheckpointStaged
+    reason: StageProbeRunning
+    status: "False"
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:03:06Z"
+    message: 'recovery is feasible from video-stream-rg-epoch-19 but 1 preparation
+      action(s) remain: VideoCheckpointStaged'
+    observedGeneration: 1
+    reason: PreparationOutstanding
+    status: "False"
+    type: Ready
+  - lastTransitionTime: "2026-09-22T08:03:06Z"
+    message: 'recovery is feasible from video-stream-rg-epoch-19 but 1 preparation
+      action(s) remain: VideoCheckpointStaged'
+    observedGeneration: 1
+    reason: PreparationOutstanding
+    status: "True"
+    type: RecoveryFeasible
+  estimatedRTO: 47s
+  lastValidatedTime: "2026-09-22T08:03:06Z"
+  observedEpoch: 19
+  observedRecoveryPoint: video-stream-rg-epoch-19
+  readiness: WARM
+  unmetMandatoryChecks:
+  - VideoCheckpointStaged

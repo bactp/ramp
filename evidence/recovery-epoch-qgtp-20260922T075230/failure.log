@@ -1,0 +1,6 @@
+T_failure=2026-09-22T07:53:13+00:00
+deployment.apps/video-session scaled
+deployment.apps/redis-primary scaled
+pod/video-session-57bb79d476-2d4wb condition met
+T_failure_complete=2026-09-22T07:53:45+00:00
+No resources found in ramp-demo namespace.

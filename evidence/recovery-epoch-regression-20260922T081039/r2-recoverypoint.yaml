@@ -1,0 +1,43 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-27","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":27,"maxPositionSkew":0,"quiesceVerifySeconds":25,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:11:07Z"
+  generation: 1
+  name: video-stream-rg-epoch-27
+  namespace: default
+  resourceVersion: "45482919"
+  uid: 85e862c1-a15c-4c5a-ba96-8d2bccfd5964
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 27
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 25
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    established: false
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:11:07Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-z5bvg
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  lastSuccessfulStage: Preparing
+  message: quiescing the application
+  phase: Quiescing
+  quiesce:
+    quiesced: false
+  runId: 70f294c8-030b-45be-aa72-9c8804ee37aa
+  timings:
+    prepareStart: "2026-09-22T08:11:07Z"
+    quiesceStart: "2026-09-22T08:11:07Z"
+  validation:
+    validated: false

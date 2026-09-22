@@ -15,6 +15,8 @@ type videoState struct {
 	FramesDecoded int64  `json:"frames_decoded"`
 	FramesPerTick int64  `json:"frames_per_tick"`
 	RedisLinked   bool   `json:"redis_linked"`
+	Quiesced      bool   `json:"quiesced"`
+	QuiesceEpoch  int64  `json:"quiesce_epoch"`
 }
 
 // parseMemberState extracts the in-memory position and instance identity from

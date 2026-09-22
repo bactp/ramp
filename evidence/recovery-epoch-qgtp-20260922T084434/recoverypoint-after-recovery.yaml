@@ -1,0 +1,199 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-29","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":29,"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:44:35Z"
+  generation: 1
+  name: video-stream-rg-epoch-29
+  namespace: default
+  resourceVersion: "45499820"
+  uid: afe55bfc-930a-4816-8034-70f252c4cda8
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 29
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  artifacts:
+  - capturedAt: "2026-09-22T08:44:39Z"
+    checksum: 97f12eaf77bbb555fb31d9a32061502bf60c01ed1982b8668ef68ab129a3ddd8
+    checksumAlgorithm: sha256
+    driver: redis-replication
+    epoch: 29
+    immutable: true
+    logicalPosition: 2112
+    member: redis
+    message: 'synchronous SAVE on the quiesced primary ramp-demo/redis-primary-579fc4d97c-9g26j;
+      BGSAVE_STATUS=ok SIZE=509 '
+    ref: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-29.rdb
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    replicationOffset: 277250
+    sizeBytes: 509
+    type: redisSnapshot
+  - capturedAt: "2026-09-22T08:44:39Z"
+    driver: redis-replication
+    epoch: 29
+    logicalPosition: 2112
+    member: redis
+    message: 'DIAGNOSTIC ONLY: the live stream keeps advancing after commit and cannot
+      identify this epoch; recovery uses the redisSnapshot artifact'
+    ref: redis-repl://192.168.28.238:30379/277250
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    replicationOffset: 277250
+    type: replicationState
+  - capturedAt: "2026-09-22T08:44:40Z"
+    checksum: ba5414859f47e97562ccea57a5fcd1fb
+    checksumAlgorithm: etag-md5
+    driver: container-checkpoint
+    epoch: 29
+    immutable: true
+    instanceFingerprint: 5ad2f48c-d435-483c-bd13-44ee39afa759
+    logicalPosition: 2112
+    member: video
+    message: kubelet checkpoint took 1.267s while quiesced=true; instance 5ad2f48c-d435-483c-bd13-44ee39afa759
+    nodeName: workload01-md-0-4qfvd-gnqcb
+    nodePath: /var/lib/kubelet/checkpoints/checkpoint-video-session-5c6684c9b7-z5bvg_ramp-demo-video-2026-09-22T08:44:39Z.tar
+    ref: minio://checkpoints/checkpoint-video-session-5c6684c9b7-z5bvg_ramp-demo-video-2026-09-22T08:44:39Z.tar
+    sizeBytes: 10483712
+    type: containerCheckpoint
+  barrier:
+    ackedReplicas: 1
+    endpoint: 192.168.28.238:30379
+    established: true
+    establishedAt: "2026-09-22T08:44:39Z"
+    markerOffset: 277250
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 277250 (stream
+      b671398f655b...)
+    position: 2112
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:44:35Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-z5bvg
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:44:39Z"
+    message: position held at 2112 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-22T08:44:39Z"
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 277250 (stream
+      b671398f655b...)
+    observedGeneration: 1
+    reason: ReplicaAcknowledged
+    status: "True"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-22T08:44:39Z"
+    message: immutable RDB minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-29.rdb
+      (509 bytes, sha256 97f12eaf77bb...) frozen at position 2112
+    observedGeneration: 1
+    reason: SnapshotUploaded
+    status: "True"
+    type: RedisStateCaptured
+  - lastTransitionTime: "2026-09-22T08:44:44Z"
+    message: immutable checkpoint minio://checkpoints/checkpoint-video-session-5c6684c9b7-z5bvg_ramp-demo-video-2026-09-22T08:44:39Z.tar
+      (10483712 bytes) at position 2112
+    observedGeneration: 1
+    reason: CheckpointLanded
+    status: "True"
+    type: VideoStateCaptured
+  - lastTransitionTime: "2026-09-22T08:44:44Z"
+    message: video checkpoint and immutable redis snapshot both belong to epoch 29
+      at logical position 2112 (skew 0)
+    observedGeneration: 1
+    reason: ConsistentAcrossDrivers
+    status: "True"
+    type: Validated
+  - lastTransitionTime: "2026-09-22T08:44:44Z"
+    message: epoch 29 committed at logical position 2112 with 2 immutable artifacts
+    observedGeneration: 1
+    reason: EpochCommitted
+    status: "True"
+    type: Committed
+  - lastTransitionTime: "2026-09-22T08:44:44Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  lastSuccessfulStage: Committed
+  logicalPosition: 2112
+  message: epoch 29 committed at logical position 2112 with 2 immutable artifacts
+  phase: Committed
+  quiesce:
+    instanceFingerprint: 5ad2f48c-d435-483c-bd13-44ee39afa759
+    message: position held at 2112 across 2 samples 3s apart
+    position: 2112
+    quiesced: false
+    quiescedAt: "2026-09-22T08:44:39Z"
+    resumedAt: "2026-09-22T08:44:44Z"
+    verifySamples:
+    - 2112
+    - 2112
+  runId: 0b9616a0-bd33-4120-9e5b-9456797ef3fb
+  timings:
+    barrierReached: "2026-09-22T08:44:39Z"
+    captureComplete: "2026-09-22T08:44:44Z"
+    captureStart: "2026-09-22T08:44:39Z"
+    commitTime: "2026-09-22T08:44:44Z"
+    prepareStart: "2026-09-22T08:44:35Z"
+    quiesceComplete: "2026-09-22T08:44:39Z"
+    quiesceStart: "2026-09-22T08:44:35Z"
+    redisSnapshotComplete: "2026-09-22T08:44:39Z"
+    redisSnapshotStart: "2026-09-22T08:44:39Z"
+    resumeTime: "2026-09-22T08:44:44Z"
+    validateComplete: "2026-09-22T08:44:44Z"
+    videoCheckpointComplete: "2026-09-22T08:44:44Z"
+    videoCheckpointStart: "2026-09-22T08:44:39Z"
+  validation:
+    checkpointPosition: 2112
+    checks:
+    - detail: quiesced=true at position 2112, samples [2112 2112]
+      name: ApplicationQuiescedAtP
+      passed: true
+    - detail: WAIT 1 -> 1 acks at offset 277250 for position 2112
+      name: RedisBarrierAcknowledgedP
+      passed: true
+    - detail: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-29.rdb immutable=true
+        checksum=97f12eaf77bb...
+      name: RedisArtifactExists
+      passed: true
+    - detail: minio://checkpoints/checkpoint-video-session-5c6684c9b7-z5bvg_ramp-demo-video-2026-09-22T08:44:39Z.tar
+        immutable=true checksum=ba5414859f47...
+      name: VideoArtifactExists
+      passed: true
+    - detail: ramp-redis-epoch/video-stream-rg-epoch-29.rdb present in checkpoints
+      name: RedisArtifactReadable
+      passed: true
+    - detail: all artifacts stamped epoch=29
+      name: ArtifactsShareEpoch
+      passed: true
+    - detail: checkpoint metadata logical position 2112 vs epoch position 2112
+      name: VideoArtifactPositionIsP
+      passed: true
+    - detail: redis snapshot logical position 2112 vs epoch position 2112
+      name: RedisArtifactPositionIsP
+      passed: true
+    - detail: observed skew 0, tolerance 0
+      name: CrossMemberSkewWithinTolerance
+      passed: true
+    - detail: 2 immutable artifacts for 2 members
+      name: EveryMemberRepresented
+      passed: true
+    message: video checkpoint and immutable redis snapshot both belong to epoch 29
+      at logical position 2112 (skew 0)
+    reason: ConsistentAcrossDrivers
+    redisSnapshotPosition: 2112
+    replicatedPosition: 2112
+    validated: true

@@ -1,0 +1,138 @@
+T_epoch_requested=2026-09-22T08:08:05+00:00
+recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-24 created
+waiting for epoch 24 to reach a terminal phase...
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-24","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":24,"faultInjection":{"failVideoCheckpoint":true},"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+  creationTimestamp: "2026-09-22T08:08:06Z"
+  generation: 1
+  name: video-stream-rg-epoch-24
+  namespace: default
+  resourceVersion: "45481438"
+  uid: 16b3f392-249b-40b8-a978-f8139cbfe6d7
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 24
+  faultInjection:
+    failVideoCheckpoint: true
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  artifacts:
+  - capturedAt: "2026-09-22T08:08:10Z"
+    checksum: 872bc1f922357fb0eb05ff962c7479a8ab759b0ad62c98a184e1b520eb44212c
+    checksumAlgorithm: sha256
+    driver: redis-replication
+    epoch: 24
+    immutable: true
+    logicalPosition: 84
+    member: redis
+    message: 'synchronous SAVE on the quiesced primary ramp-demo/redis-primary-579fc4d97c-9g26j;
+      BGSAVE_STATUS=ok SIZE=425 '
+    ref: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-24.rdb
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    replicationOffset: 11008
+    sizeBytes: 425
+    type: redisSnapshot
+  - capturedAt: "2026-09-22T08:08:11Z"
+    driver: redis-replication
+    epoch: 24
+    logicalPosition: 84
+    member: redis
+    message: 'DIAGNOSTIC ONLY: the live stream keeps advancing after commit and cannot
+      identify this epoch; recovery uses the redisSnapshot artifact'
+    ref: redis-repl://192.168.28.238:30379/11008
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    replicationOffset: 11008
+    type: replicationState
+  barrier:
+    ackedReplicas: 1
+    endpoint: 192.168.28.238:30379
+    established: true
+    establishedAt: "2026-09-22T08:08:10Z"
+    markerOffset: 11008
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 11008 (stream
+      b671398f655b...)
+    position: 84
+    replicationId: b671398f655b216876c23d52acf50e7dcd5b7a5a
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-22T08:08:06Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-z5bvg
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T08:08:10Z"
+    message: position held at 84 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-22T08:08:10Z"
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 11008 (stream
+      b671398f655b...)
+    observedGeneration: 1
+    reason: ReplicaAcknowledged
+    status: "True"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-22T08:08:11Z"
+    message: immutable RDB minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-24.rdb
+      (425 bytes, sha256 872bc1f92235...) frozen at position 84
+    observedGeneration: 1
+    reason: SnapshotUploaded
+    status: "True"
+    type: RedisStateCaptured
+  - lastTransitionTime: "2026-09-22T08:08:11Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-22T08:08:11Z"
+    message: 'epoch aborted after stage CapturingRedis: faultInjection.failVideoCheckpoint:
+      container checkpoint forced to fail AFTER the Redis epoch artifact was created'
+    observedGeneration: 1
+    reason: CheckpointFailed
+    status: "False"
+    type: Committed
+  failureReason: CheckpointFailed
+  lastSuccessfulStage: CapturingRedis
+  logicalPosition: 84
+  message: 'faultInjection.failVideoCheckpoint: container checkpoint forced to fail
+    AFTER the Redis epoch artifact was created'
+  phase: Failed
+  quiesce:
+    instanceFingerprint: 5ad2f48c-d435-483c-bd13-44ee39afa759
+    message: position held at 84 across 2 samples 3s apart
+    position: 84
+    quiesced: false
+    quiescedAt: "2026-09-22T08:08:10Z"
+    resumedAt: "2026-09-22T08:08:11Z"
+    verifySamples:
+    - 84
+    - 84
+  runId: 70f294c8-030b-45be-aa72-9c8804ee37aa
+  timings:
+    barrierReached: "2026-09-22T08:08:10Z"
+    captureStart: "2026-09-22T08:08:10Z"
+    prepareStart: "2026-09-22T08:08:06Z"
+    quiesceComplete: "2026-09-22T08:08:10Z"
+    quiesceStart: "2026-09-22T08:08:06Z"
+    redisSnapshotComplete: "2026-09-22T08:08:11Z"
+    redisSnapshotStart: "2026-09-22T08:08:10Z"
+    resumeTime: "2026-09-22T08:08:11Z"
+    videoCheckpointStart: "2026-09-22T08:08:11Z"
+  validation:
+    reason: CheckpointFailed
+    validated: false
+T_epoch_observed=2026-09-22T08:08:12+00:00
+recovery_point=video-stream-rg-epoch-24

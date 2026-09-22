@@ -1,0 +1,72 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{},"name":"video-stream-rg-epoch-9","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":9,"maxPositionSkew":2,"recoveryGroupRef":"video-stream-rg"}}
+  creationTimestamp: "2026-09-22T05:14:49Z"
+  generation: 1
+  name: video-stream-rg-epoch-9
+  namespace: default
+  resourceVersion: "45395266"
+  uid: 9624d229-1efe-46e4-b687-732c2e5bb14b
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 9
+  maxPositionSkew: 2
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  artifacts:
+  - capturedAt: "2026-09-22T05:14:49Z"
+    driver: redis-replication
+    logicalPosition: 134
+    member: redis
+    message: role=master connectedReplicas=1
+    ref: redis-repl://192.168.28.238:30379/17129
+    replicationId: 4ec7b64d100a8be967e068e4082b62ee993e9c10
+    replicationOffset: 17129
+    type: replicationState
+  - capturedAt: "2026-09-22T05:14:50Z"
+    driver: container-checkpoint
+    instanceFingerprint: d6d62be9-9370-4f1f-a3d0-2a17255cd0c9
+    logicalPosition: 134
+    member: video
+    message: kubelet checkpoint took 1.197s; instance d6d62be9-9370-4f1f-a3d0-2a17255cd0c9
+    nodeName: workload01-md-0-4qfvd-gnqcb
+    nodePath: /var/lib/kubelet/checkpoints/checkpoint-video-session-77b9c69fb5-4xpqh_ramp-demo-video-2026-09-22T05:14:49Z.tar
+    ref: minio://checkpoints/checkpoint-video-session-77b9c69fb5-4xpqh_ramp-demo-video-2026-09-22T05:14:49Z.tar
+    sizeBytes: 10080768
+    type: containerCheckpoint
+  conditions:
+  - lastTransitionTime: "2026-09-22T05:14:54Z"
+    message: container-checkpoint position 134 and redis-replication position 134
+      differ by 0 (tolerance 2)
+    observedGeneration: 1
+    reason: ConsistentAcrossDrivers
+    status: "True"
+    type: Validated
+  - lastTransitionTime: "2026-09-22T05:14:54Z"
+    message: epoch 9 committed with 2 heterogeneous artifacts
+    observedGeneration: 1
+    reason: EpochCommitted
+    status: "True"
+    type: Committed
+  message: epoch 9 committed with 2 heterogeneous artifacts
+  phase: Committed
+  timings:
+    barrierReached: "2026-09-22T05:14:49Z"
+    captureComplete: "2026-09-22T05:14:54Z"
+    captureStart: "2026-09-22T05:14:49Z"
+    commitTime: "2026-09-22T05:14:54Z"
+    prepareStart: "2026-09-22T05:14:49Z"
+    validateComplete: "2026-09-22T05:14:54Z"
+  validation:
+    checkpointPosition: 134
+    message: container-checkpoint position 134 and redis-replication position 134
+      differ by 0 (tolerance 2)
+    reason: ConsistentAcrossDrivers
+    replicatedPosition: 134
+    validated: true

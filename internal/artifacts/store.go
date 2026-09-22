@@ -3,13 +3,19 @@
 // on: a MinIO bucket on the management cluster, written by the node-local
 // checkpoint-agent and read back by whoever needs the artifact.
 //
-// RAMP only ever OBSERVES this store. It never uploads and never deletes: the
-// upload half belongs to checkpoint-agent and the promotion-to-OCI half
-// belongs to the Transition Operator.
+// RAMP OBSERVES the container-checkpoint half of this store: the upload belongs
+// to checkpoint-agent and the promotion-to-OCI half belongs to the Transition
+// Operator. RAMP does write ONE class of object itself -- the epoch-specific
+// Redis RDB snapshot -- because no existing agent produces it and because a
+// RecoveryPoint that points at a live replica is not a recovery point at all.
+// It never deletes anything.
 package artifacts
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -96,6 +102,42 @@ func (s *Store) WaitFor(ctx context.Context, key string, timeout, poll time.Dura
 		case <-time.After(poll):
 		}
 	}
+}
+
+// Put uploads an epoch artifact RAMP produced itself and returns its sha256.
+// The key must be epoch-unique: an artifact that can be overwritten is not an
+// immutable recovery point.
+func (s *Store) Put(ctx context.Context, key string, data []byte, contentType string) (string, error) {
+	sum := sha256.Sum256(data)
+	digest := hex.EncodeToString(sum[:])
+	if _, ok, err := s.Stat(ctx, key); err == nil && ok {
+		return "", fmt.Errorf("artifact %s/%s already exists; epoch artifacts are never overwritten", s.bucket, key)
+	}
+	_, err := s.client.PutObject(ctx, s.bucket, key, bytes.NewReader(data), int64(len(data)),
+		minio.PutObjectOptions{ContentType: contentType, UserMetadata: map[string]string{"Ramp-Sha256": digest}})
+	if err != nil {
+		return "", fmt.Errorf("uploading %s/%s: %w", s.bucket, key, err)
+	}
+	return digest, nil
+}
+
+// Get reads an artifact back, verifying the sha256 when one is supplied.
+func (s *Store) Get(ctx context.Context, key, wantSHA256 string) ([]byte, error) {
+	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get %s/%s: %w", s.bucket, key, err)
+	}
+	defer obj.Close()
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(obj); err != nil {
+		return nil, fmt.Errorf("reading %s/%s: %w", s.bucket, key, err)
+	}
+	sum := sha256.Sum256(buf.Bytes())
+	got := hex.EncodeToString(sum[:])
+	if wantSHA256 != "" && got != wantSHA256 {
+		return nil, fmt.Errorf("artifact %s/%s checksum mismatch: want %s got %s", s.bucket, key, wantSHA256, got)
+	}
+	return buf.Bytes(), nil
 }
 
 // Ref renders the canonical reference recorded in a RecoveryPoint artifact.
