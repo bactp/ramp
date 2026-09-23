@@ -1,0 +1,9 @@
+case=test3-video-checkpoint-failure
+recoveryPoint=video-stream-rg-epoch-43
+phase=Failed
+lastSuccessfulStage=CapturingRedis
+failureReason=CheckpointFailed (expected CheckpointFailed)
+message=test fault injection (failVideoCheckpoint): container checkpoint forced to fail AFTER the Redis epoch artifact was created
+application quiesced after epoch=False
+application position before=26412 after=26419 (must advance)
+verdict=PASS

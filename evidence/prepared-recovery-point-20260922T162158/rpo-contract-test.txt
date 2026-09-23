@@ -1,0 +1,17 @@
+prepared RecoveryPoint : video-stream-rg-epoch-47
+RPO set to             : 156s
+
+observed at            age        freshEnough  readiness remaining
+2026-09-22T16:25:01+00:00 2m16s      True         HOT       27m44s
+2026-09-22T16:25:04+00:00 2m19s      True         HOT       17s
+2026-09-22T16:25:06+00:00 2m21s      True         HOT       15s
+2026-09-22T16:25:08+00:00 2m23s      True         HOT       13s
+2026-09-22T16:25:11+00:00 2m25s      True         HOT       11s
+2026-09-22T16:25:13+00:00 2m28s      True         HOT       8s
+2026-09-22T16:25:15+00:00 2m31s      True         HOT       5s
+2026-09-22T16:25:18+00:00 2m33s      True         HOT       3s
+2026-09-22T16:25:20+00:00 2m35s      True         HOT       1s
+2026-09-22T16:25:23+00:00 2m38s      False        WARM      0s
+
+transition observed at: 2026-09-22T16:25:23+00:00
+verdict: PASS

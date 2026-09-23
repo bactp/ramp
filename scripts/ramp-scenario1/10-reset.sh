@@ -21,7 +21,10 @@ GP=$(kubectl --kubeconfig "${MGMT:-$HOME/mgmt.kubeconfig}" get secret git-user-s
 . "$(dirname "$0")/lib-recovery-manifest.sh"
 if [ -n "$(file_sha dr "${DR_PATH}/deployment.yaml")" ]; then
   W=$(mktemp -d)
-  render_recovery_manifests "$W" 0 "python:3.12-slim" IfNotPresent prepared
+  # No RecoveryPoint, no epoch, no image: a parked target is prepared for
+  # nothing, and RAMP must report exactly that rather than inherit the last
+  # run's attribution.
+  render_recovery_manifests "$W" 0 "python:3.12-slim" IfNotPresent parked "" "" ""
   put_file dr "${DR_PATH}/deployment.yaml" "$W/deployment.yaml" "RAMP reset: park ${APP} at replicas 0"
   rm -rf "$W"
   trigger_sync "$WL02" "${TGT_CLUSTER}-dr"

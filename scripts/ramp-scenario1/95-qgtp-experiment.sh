@@ -23,7 +23,8 @@ NS="${NS:-ramp-demo}"
 PATH_NAME="${PATH_NAME:-video-workload01-to-workload02}"
 GROUP="${GROUP:-video-stream-rg}"
 ADVANCE="${ADVANCE:-20}"
-TARGET_NODE="${TARGET_NODE:-workload02-md-0-rx5mn-pjkrh}"
+# TARGET_NODE is taken from the path's own placement decision below, so that
+# preparation and readiness cannot disagree about where the recovery lands.
 VIDEO_URL="${VIDEO_URL:-http://192.168.28.122:30808/}"
 OUT="${OUT:-$ROOT/evidence/recovery-epoch-qgtp-$(date +%Y%m%dT%H%M%S)}"
 mkdir -p "$OUT"
@@ -65,28 +66,34 @@ done
 [ -n "$REDIS_REF" ] || { echo "RP has no immutable redis artifact"; exit 1; }
 
 # PREPARE the target while the source is still healthy: stage the artifact,
-# build the CRI checkpoint image on the target node, and put the ArgoCD wiring
-# and the (scaled-to-zero) workload object in place. None of this is on the
-# recovery path.
+# build the CRI checkpoint image on the placement node, and put the ArgoCD
+# wiring and the (scaled-to-zero) workload object in place. None of this is on
+# the recovery path.
 #
-# RP_NAME is mandatory here: the path's observedRecoveryPoint lags the epoch by
-# up to one RecoveryGroup resync, so without it the PREVIOUS epoch's artifact
-# gets staged and the restore would read a checkpoint from the wrong epoch.
+# 36-prepare-target.sh is told WHICH RecoveryPoint it prepares and stamps that
+# claim on the target, so the readiness controller can verify it. The previous
+# version passed RP_NAME to one step only, and an unpinned step once staged the
+# previous epoch's artifact while the path still looked prepared.
 mark T_prepare_start
-RP_NAME="$RP" ./30-prepare-path.sh "$PATH_NAME" default > "$OUT/prepare-path.log" 2>&1 || true
-CKPT_IMAGE=$(RP="$RP" TARGET_NODE="$TARGET_NODE" ./35-build-checkpoint-image.sh 2>"$OUT/imgbuild.log" \
-             | awk -F= '/^CKPT_IMAGE=/{print $2}')
-[ -n "$CKPT_IMAGE" ] || { echo "checkpoint image build failed"; tail -20 "$OUT/imgbuild.log"; exit 1; }
+TARGET_NODE=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.targetPlacement.node}')
+[ -n "$TARGET_NODE" ] || { echo "the path has not selected a placement node"; exit 1; }
+echo "placement_node=$TARGET_NODE" | tee -a "$OUT/timings.txt"
+CKPT_IMAGE=$(RP="$RP" TARGET_NODE="$TARGET_NODE" ./36-prepare-target.sh 2>&1 \
+             | tee "$OUT/prepare-target.log" | awk -F= '/^CKPT_IMAGE=/{print $2}')
+[ -n "$CKPT_IMAGE" ] || { echo "target preparation failed"; tail -25 "$OUT/prepare-target.log"; exit 1; }
 echo "checkpoint_image=$CKPT_IMAGE" | tee -a "$OUT/timings.txt"
-TARGET_NODE="$TARGET_NODE" ./61-prepare-gitops-path.sh > "$OUT/prepare-gitops.log" 2>&1 || true
-for _ in $(seq 1 20); do
-  R=$(K2 get deploy video-session -n "$NS" -o jsonpath='{.spec.replicas}' 2>/dev/null || true)
-  [ "$R" = "0" ] && break
+mark T_prepare_complete
+
+# Wait for the readiness controller to PROMOTE this RecoveryPoint to prepared.
+# Recovering from a point the path has not accepted as executable would be
+# testing the scripts, not the system.
+for _ in $(seq 1 60); do
+  [ "$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.preparedRecoveryPoint.name}')" = "$RP" ] && break
   sleep 3
 done
-mark T_prepare_complete
-sleep 20
+mark T_promoted
 K get recoverypath "$PATH_NAME" -o yaml > "$OUT/recoverypath-before-failure.yaml"
+echo "prepared_recovery_point=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.preparedRecoveryPoint.name}')" | tee -a "$OUT/timings.txt"
 echo "path_readiness=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.readiness}')" | tee -a "$OUT/timings.txt"
 
 # ------------------------------------------------- B: source advances ------

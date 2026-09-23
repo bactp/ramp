@@ -9,9 +9,11 @@ set -euo pipefail
 KUBECONFIG_MGMT="${KUBECONFIG_MGMT:-$HOME/mgmt.kubeconfig}"
 GROUP="${1:-video-stream-rg}"
 NS="${2:-default}"
-# Optional YAML fragment merged into spec, used by the negative tests to inject
-# a failure at a specific stage.
+# Optional YAML fragment merged into spec (e.g. quiesceVerifySeconds).
 EXTRA_SPEC="${EXTRA_SPEC:-}"
+# TEST ONLY: a JSON fault-injection directive, carried as an annotation rather
+# than a spec field so that "corrupt this epoch" is not part of the API.
+FAULT_INJECTION="${FAULT_INJECTION:-}"
 
 # Next epoch = highest EXISTING RecoveryPoint epoch + 1, read from the objects
 # themselves rather than from recoverygroup.status.latestEpoch. That status
@@ -32,6 +34,8 @@ kind: RecoveryPoint
 metadata:
   name: ${NAME}
   namespace: ${NS}
+  annotations:
+    ramp.dcn.ssu.ac.kr/test-fault-injection: '${FAULT_INJECTION}'
 spec:
   recoveryGroupRef: ${GROUP}
   epoch: ${EPOCH}

@@ -46,28 +46,6 @@ const (
 	ArtifactReplicationState ArtifactType = "replicationState"
 )
 
-// FaultInjection forces a specific stage of the epoch to fail. It exists so
-// that the negative tests -- "a failed capture must never commit, and must
-// always resume the application" -- can be executed against the real controller
-// instead of being argued on paper. It is never set by normal operation.
-type FaultInjection struct {
-	// FailRedisSnapshot aborts the epoch during CAPTURE REDIS.
-	// +optional
-	FailRedisSnapshot bool `json:"failRedisSnapshot,omitempty"`
-	// FailVideoCheckpoint aborts the epoch during CAPTURE VIDEO, i.e. AFTER the
-	// Redis epoch artifact already exists.
-	// +optional
-	FailVideoCheckpoint bool `json:"failVideoCheckpoint,omitempty"`
-	// ForcePositionSkew perturbs the recorded Redis artifact position by this
-	// many logical positions, so VALIDATE sees two artifacts that disagree.
-	// +optional
-	ForcePositionSkew int64 `json:"forcePositionSkew,omitempty"`
-	// SkipQuiesce runs the epoch the old way -- without pausing the application
-	// -- so the pre-fix behaviour remains reproducible for comparison.
-	// +optional
-	SkipQuiesce bool `json:"skipQuiesce,omitempty"`
-}
-
 // RecoveryPointSpec defines one Recovery Epoch to be executed.
 type RecoveryPointSpec struct {
 	// RecoveryGroupRef is the group this epoch captures.
@@ -110,11 +88,18 @@ type RecoveryPointSpec struct {
 	// +optional
 	// +kubebuilder:default=3
 	QuiesceVerifySeconds int32 `json:"quiesceVerifySeconds,omitempty"`
-
-	// FaultInjection is test-only; see FaultInjection.
-	// +optional
-	FaultInjection *FaultInjection `json:"faultInjection,omitempty"`
 }
+
+// AnnFaultInjection is a TEST-ONLY annotation carrying a JSON fault-injection
+// directive; see internal/controller/faultinjection.go.
+//
+// It used to be spec.faultInjection -- a first-class, schema-validated field of
+// the production API whose only purpose was to make the negative tests fail on
+// command. An API field is a contract offered to users, and "please corrupt
+// this epoch" is not one this project wants to offer. As an annotation it stays
+// exactly as usable by the test suite, stays out of the CRD schema, and reads as
+// what it is.
+const AnnFaultInjection = "ramp.dcn.ssu.ac.kr/test-fault-injection"
 
 // RecoveryArtifact is one member's captured recovery state. Artifacts within a
 // RecoveryPoint are heterogeneous by design.

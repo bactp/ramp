@@ -1,0 +1,36 @@
+preparing video-workload01-to-workload02 for video-stream-rg-epoch-39 (epoch 39) on node workload02-md-0-rx5mn-pjkrh
+T_prepare_start=2026-09-22T16:10:21+00:00
+--- 1/3 staging the checkpoint artifact ---
+T_stage_start=2026-09-22T16:10:22+00:00
+staging checkpoint-video-session-5c6684c9b7-q2r4b_ramp-demo-video-2026-09-22T16:10:13Z.tar (bucket checkpoints) onto workload02 node workload02-md-0-rx5mn-pjkrh:/var/lib/kubelet/checkpoints
+job.batch/ramp-stage-checkpoint-v-899678c7 created
+job.batch/ramp-stage-checkpoint-v-899678c7 condition met
+<string>:13: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+staged checkpoint-video-session-5c6684c9b7-q2r4b_ramp-demo-video-2026-09-22T16:10:13Z.tar -> /staging/checkpoint-video-session-5c6684c9b7-q2r4b_ramp-demo-video-2026-09-22T16:10:13Z.tar (10557952 bytes)
+T_stage_complete=2026-09-22T16:10:28+00:00
+--- 2/3 building the CRI checkpoint image on workload02-md-0-rx5mn-pjkrh ---
+building docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-39 from checkpoint-video-session-5c6684c9b7-q2r4b_ramp-demo-video-2026-09-22T16:10:13Z.tar on workload02-md-0-rx5mn-pjkrh
+  rewrote rootfs fields -> name=docker.io/library/python:3.12-slim ref=docker.io/library/python:3.12-slim
+built OCI checkpoint image archive: /tmp/ramp-ckptimg-otmzx_92/image.tar (layer 2.7 MB)
+  rootfsImageName = docker.io/library/python:3.12-slim
+  container.name  = docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-39
+docker.io/ramp/checkpoint video session:	saved	
+application/vnd.oci.image.manifest.v1+json sha256:0fba00b45d2e911a3774e3a320c79586cbde542eb4233acf40c20746e55b37b1
+Importing	elapsed: 0.3 s	total:   0.0 B	(0.0 B/s)
+imported docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-39
+checkpoint image: docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-39
+--- 3/3 preparing the activation plan ---
+T_prepare_start=2026-09-22T16:10:36+00:00
+  updated dr:workload02-dr/video-session/deployment.yaml @ e2213bc52f5d
+  updated dr:workload02-dr/video-session/svc.yaml @ fb6ad45e0ef6
+NAME            SYNC STATUS   HEALTH STATUS
+workload02-dr   Synced        Healthy
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/video-session   0/0     0            0           10h
+
+NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/video-session   NodePort   10.97.18.100   <none>        8080:30808/TCP   10h
+T_prepare_complete=2026-09-22T16:10:38+00:00
+activation plan prepared for: video-stream-rg-epoch-39 (expected video-stream-rg-epoch-39)
+T_prepare_complete=2026-09-22T16:10:40+00:00
+CKPT_IMAGE=docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-39

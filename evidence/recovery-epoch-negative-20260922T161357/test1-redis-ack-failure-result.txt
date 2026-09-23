@@ -1,0 +1,9 @@
+case=test1-redis-ack-failure
+recoveryPoint=video-stream-rg-epoch-41
+phase=Failed
+lastSuccessfulStage=Quiescing
+failureReason=ReplicaAckNotAchieved (expected ReplicaAckNotAchieved)
+message=replication barrier not acknowledged: WAIT 1 returned 0 on 192.168.28.238:30379 within 10s
+application quiesced after epoch=False
+application position before=26394 after=26401 (must advance)
+verdict=PASS

@@ -21,11 +21,15 @@ get_path() { kubectl --kubeconfig "$KUBECONFIG_MGMT" get recoverypath "$PATH_NAM
 TARGET=$(get_path '{.spec.targetCluster}')
 TGT_NS=$(get_path '{.spec.targetPrereqs.namespace}')
 STAGE_DIR=$(get_path '{.spec.targetPrereqs.checkpointStagingPath}')
-# RP_NAME pins preparation to a specific RecoveryPoint. Without it we fall back
-# to whatever the path currently observes -- but that field lags the epoch by up
-# to one RecoveryGroup resync interval, so a script that has just created an
-# epoch must pass RP_NAME or it will stage the PREVIOUS epoch's artifact.
-RP="${RP_NAME:-$(get_path '{.status.observedRecoveryPoint}')}"
+# The node the path has selected for placement; artifacts are staged THERE.
+TARGET_NODE="${TARGET_NODE:-$(get_path '{.status.targetPlacement.node}')}"
+# RP_NAME pins preparation to a specific RecoveryPoint, and callers are expected
+# to pass it: preparing "whatever the path currently reports" is how an earlier
+# experiment staged the PREVIOUS epoch's artifact. The fallback is the path's
+# CANDIDATE point -- the one preparation is supposed to be working towards --
+# and only then the prepared one, never the group's bare latest.
+RP="${RP_NAME:-$(get_path '{.status.candidateRecoveryPoint.name}')}"
+[ -n "$RP" ] || RP="$(get_path '{.status.preparedRecoveryPoint.name}')"
 
 if [ -z "$RP" ]; then
   echo "path $PATH_NAME has no committed RecoveryPoint to prepare for; nothing to stage" >&2
@@ -44,8 +48,9 @@ TGT_KUBECONFIG="${TGT_KUBECONFIG:-$HOME/${TARGET}.kubeconfig}"
 JOB="ramp-stage-${OBJ:0:12}-$(echo "$OBJ" | md5sum | cut -c1-8)"
 JOB=$(echo "$JOB" | tr '[:upper:]_.' '[:lower:]--' | cut -c1-60)
 
+[ -n "$TARGET_NODE" ] || { echo "no placement node: set TARGET_NODE or wait for the RecoveryPath to select one" >&2; exit 1; }
 echo "T_stage_start=$(date -Is)"
-echo "staging $OBJ (bucket $BUCKET) onto $TARGET:$STAGE_DIR"
+echo "staging $OBJ (bucket $BUCKET) onto $TARGET node $TARGET_NODE:$STAGE_DIR"
 
 kubectl --kubeconfig "$TGT_KUBECONFIG" delete job "$JOB" -n "$TGT_NS" --ignore-not-found >/dev/null 2>&1 || true
 
@@ -69,13 +74,11 @@ spec:
         ramp.dcn.ssu.ac.kr/component: stage-action
     spec:
       restartPolicy: Never
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: DoesNotExist
+      # PINNED to the path's placement node. Letting the scheduler choose staged
+      # the artifact on whichever worker was free, which is not necessarily the
+      # node the restore runs on -- so the readiness evidence and the recovery
+      # could refer to different machines.
+      nodeName: ${TARGET_NODE}
       volumes:
         - name: staging
           hostPath:

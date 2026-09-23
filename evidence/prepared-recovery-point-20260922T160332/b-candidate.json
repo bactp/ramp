@@ -1,0 +1,12 @@
+{
+    "commitTime": "2026-09-22T16:04:27Z",
+    "epoch": 38,
+    "logicalPosition": 25848,
+    "message": "a newer committed RecoveryPoint is being prepared; the path keeps recovering from video-stream-rg-epoch-37 until video-stream-rg-epoch-38 is proven executable",
+    "missingPreparation": [
+        "RestoreArtifactReady",
+        "ActivationPlanPrepared"
+    ],
+    "name": "video-stream-rg-epoch-38",
+    "observedAt": "2026-09-22T16:04:34Z"
+}

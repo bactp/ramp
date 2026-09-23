@@ -34,6 +34,7 @@ TARGET_NODE="${TARGET_NODE:?TARGET_NODE must be set}"
 MGMT="${MGMT:-$HOME/mgmt.kubeconfig}"
 TGT_KUBECONFIG="${TGT_KUBECONFIG:-$HOME/${TGT_CLUSTER}.kubeconfig}"
 DR_PATH="${DR_PATH:-${TGT_CLUSTER}-dr/${APP}}"
+RP="${RP:-}"
 
 GU=$(kubectl --kubeconfig "$MGMT" get secret git-user-secret -n default -o jsonpath='{.data.username}' | base64 -d)
 GP=$(kubectl --kubeconfig "$MGMT" get secret git-user-secret -n default -o jsonpath='{.data.password}' | base64 -d)
@@ -86,7 +87,11 @@ echo "T_gitops_start=$(date -Is)"
 # Naive flow: nothing was prepared, so the whole recovery manifest set is
 # written and converged at failure time. Kept for comparison against the
 # prepare/activate split in 61/62.
-render_recovery_manifests "$WORK" 1 "$CKPT_IMAGE" Never activated
+EPOCH=""
+if [ -n "$RP" ]; then
+  EPOCH=$(kubectl --kubeconfig "$MGMT" get recoverypoint "$RP" -o jsonpath='{.spec.epoch}' 2>/dev/null || true)
+fi
+render_recovery_manifests "$WORK" 1 "$CKPT_IMAGE" Never activated "$RP" "$EPOCH" "$CKPT_IMAGE"
 put_file dr "${DR_PATH}/deployment.yaml" "$WORK/deployment.yaml" "RAMP restore: ${APP} from ${CKPT_IMAGE}"
 put_file dr "${DR_PATH}/svc.yaml"        "$WORK/svc.yaml"        "RAMP restore: ${APP} service"
 echo "T_git_pushed=$(date -Is)"

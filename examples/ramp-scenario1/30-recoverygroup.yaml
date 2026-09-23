@@ -35,6 +35,17 @@ spec:
       recoveryDriver: container-checkpoint
       container: video
 
+  # The contract is now ENFORCED by RecoveryPath readiness, not carried as
+  # documentation:
+  #   rpo -> the prepared RecoveryPoint must be younger than this, or the path
+  #          stops claiming HOT even though it is still fully restorable
+  #   rto -> the estimated activation latency (a sum of the remaining
+  #          deterministic failure-time steps) must fit inside this
+  #
+  # 30m is honest for today: epochs are created by hand, so the age of the
+  # prepared point is bounded by how often someone runs an epoch. Automatic
+  # epoch cadence driven by this field is the NEXT task; until it exists, a
+  # tight RPO here would just mean the path is permanently WARM.
   recoveryContract:
     rto: 60s
-    rpo: 5s
+    rpo: 30m

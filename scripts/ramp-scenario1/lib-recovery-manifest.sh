@@ -14,10 +14,22 @@
 # to do with the recovery.
 #
 # The DR repo is synced only by the target's <target>-dr Application, so it is
-# the only safe home for target-shaped manifests. This is presumably why the
-# repo exists.
-render_recovery_manifests() { # render_recovery_manifests <dir> <replicas> <image> <pullPolicy> <state>
+# the only safe home for target-shaped manifests.
+#
+# WHY THE ANNOTATIONS ARE NOT DECORATION
+# --------------------------------------
+# The manifest carries the RecoveryPoint it was prepared for, that point's
+# epoch, the checkpoint image built from that point's artifact, and the node the
+# artifacts were staged on. RAMP's readiness evaluation reads exactly these four
+# and refuses to call the plan prepared for any other RecoveryPoint.
+#
+# Without them, "the target is prepared" meant "some script ran at some time
+# against whatever was latest then" -- which is how a Q>P experiment once staged
+# epoch N-1's checkpoint and failed to restore. Preparation now has to say what
+# it prepared, and the controller checks the claim.
+render_recovery_manifests() { # <dir> <replicas> <image> <pullPolicy> <state> <recoveryPoint> <epoch> <checkpointImage>
   local dir="$1" replicas="$2" image="$3" pull="$4" state="$5"
+  local rp="${6:-}" epoch="${7:-}" ckpt_image="${8:-}"
   mkdir -p "$dir"
   cat > "$dir/deployment.yaml" <<YAML
 apiVersion: apps/v1
@@ -28,6 +40,10 @@ metadata:
   annotations:
     ramp.dcn.ssu.ac.kr/recovery-driver: container-checkpoint
     ramp.dcn.ssu.ac.kr/state: ${state}
+    ramp.dcn.ssu.ac.kr/prepared-recovery-point: "${rp}"
+    ramp.dcn.ssu.ac.kr/prepared-epoch: "${epoch}"
+    ramp.dcn.ssu.ac.kr/checkpoint-image: "${ckpt_image}"
+    ramp.dcn.ssu.ac.kr/target-node: "${TARGET_NODE}"
   labels:
     app: ${APP}
 spec:

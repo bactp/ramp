@@ -25,13 +25,13 @@ vstate() { K1 exec -n "$NS" deploy/video-session -- sh -c 'cat /tmp/ramp-video-s
 vfield() { vstate | python3 -c "import sys,json;print(json.load(sys.stdin)[\"$1\"])" 2>/dev/null || echo "?"; }
 
 RESULTS=()
-run_case() { # run_case <id> <title> <expected-reason> <extra-spec> [barrier-timeout]
-  local id="$1" title="$2" want="$3" extra="$4" bt="${5:-30}"
+run_case() { # run_case <id> <title> <expected-reason> <fault-injection-json> [barrier-timeout]
+  local id="$1" title="$2" want="$3" fault="$4" bt="${5:-30}"
   echo; echo "########## $id: $title ##########"
   local before after quiesced phase reason msg rp
   before=$(vfield position)
 
-  EXTRA_SPEC="$extra" BARRIER_TIMEOUT="$bt" EXPECT_PHASE=Failed \
+  FAULT_INJECTION="$fault" BARRIER_TIMEOUT="$bt" EXPECT_PHASE=Failed \
     ./20-run-epoch.sh "$GROUP" default > "$OUT/$id.log" 2>&1
   rp=$(awk -F= '/^recovery_point=/{print $2}' "$OUT/$id.log" | tail -1)
   K get recoverypoint "$rp" -o yaml > "$OUT/$id-recoverypoint.yaml" 2>/dev/null
@@ -87,15 +87,13 @@ done
 
 # --- Test 2: Redis epoch artifact capture fails ----------------------------
 run_case test2-redis-snapshot-failure "Redis epoch snapshot fails" RedisSnapshotFailed \
-  '  faultInjection:
-    failRedisSnapshot: true'
+  '{"failRedisSnapshot":true}'
 
 # --- Test 3: video checkpoint fails AFTER the redis artifact exists --------
 # The orphaned RDB stays in the artifact store on purpose. It must be visible
 # as an object and invisible as a recovery point.
 run_case test3-video-checkpoint-failure "Video checkpoint fails after the Redis artifact was created" CheckpointFailed \
-  '  faultInjection:
-    failVideoCheckpoint: true'
+  '{"failVideoCheckpoint":true}'
 ORPHAN_RP=$(awk -F= '/^recovery_point=/{print $2}' "$OUT/test3-video-checkpoint-failure.log" | tail -1)
 ORPHAN_REF=$(K get recoverypoint "$ORPHAN_RP" -o jsonpath='{.status.artifacts[?(@.type=="redisSnapshot")].ref}')
 {
@@ -108,8 +106,7 @@ ORPHAN_REF=$(K get recoverypoint "$ORPHAN_RP" -o jsonpath='{.status.artifacts[?(
 
 # --- Test 4: the two artifacts disagree about the position -----------------
 run_case test4-position-mismatch "Redis artifact and Video state disagree" ValidationFailed \
-  '  faultInjection:
-    forcePositionSkew: 3'
+  '{"forcePositionSkew":3}'
 
 echo; echo "########## summary ##########"
 {

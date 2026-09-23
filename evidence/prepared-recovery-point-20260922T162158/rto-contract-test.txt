@@ -1,0 +1,56 @@
+estimated activation latency = 12s
+--- breakdown (status.contract.activationSteps) ---
+[
+    {
+        "cost": "1m0s",
+        "name": "ProvisionRedisRuntime",
+        "reason": "target Redis runtime already up and warm",
+        "required": false
+    },
+    {
+        "cost": "30s",
+        "name": "StageCheckpointArtifact",
+        "reason": "checkpoint tar present on the placement node",
+        "required": false
+    },
+    {
+        "cost": "45s",
+        "name": "BuildCheckpointImage",
+        "reason": "CRI checkpoint image present on the placement node",
+        "required": false
+    },
+    {
+        "cost": "25s",
+        "name": "PrepareActivationPlan",
+        "reason": "target workload object and ArgoCD wiring already in place",
+        "required": false
+    },
+    {
+        "cost": "3s",
+        "name": "RestoreRedisFromEpochArtifact",
+        "reason": "fetch the epoch RDB, load it, restart, verify the position is P",
+        "required": true
+    },
+    {
+        "cost": "2s",
+        "name": "CommitAndSyncActivation",
+        "reason": "one commit switching image and replicas, one sync trigger",
+        "required": true
+    },
+    {
+        "cost": "6s",
+        "name": "RestoreContainerFromCheckpoint",
+        "reason": "containerd CRIU restore to pod ready",
+        "required": true
+    },
+    {
+        "cost": "1s",
+        "name": "VerifyAndRelease",
+        "reason": "verify the restored position is P, then release the quiesce",
+        "required": true
+    }
+]
+--- RTO = 60s ---
+rto=1m0s estimated=12s within=true readiness=HOT
+--- RTO =  5s ---
+rto=5s estimated=12s within=false readiness=WARM

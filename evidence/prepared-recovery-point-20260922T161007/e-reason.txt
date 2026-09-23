@@ -1,0 +1,1 @@
+CheckpointImageMissingOnNode: the checkpoint tar is staged on node workload02-md-0-rx5mn-pjkrh but the CRI checkpoint image docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-40 is not in its containerd; restoring would first have to build it

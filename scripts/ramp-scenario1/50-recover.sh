@@ -36,10 +36,13 @@ K()  { kubectl --kubeconfig "$MGMT" "$@"; }
 K2() { kubectl --kubeconfig "$WL02" "$@"; }
 
 # RP may be pinned explicitly -- the Q>P experiment recovers from an OLD epoch
-# on purpose. Otherwise take what the path is tracking.
+# on purpose. Otherwise take the path's PREPARED RecoveryPoint, which is the one
+# whose artifacts are actually on the target. Taking the group's latest point
+# would name an epoch that may have nothing staged for it at all.
 if [ -z "${RP:-}" ]; then
-  RP=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.observedRecoveryPoint}')
+  RP=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.preparedRecoveryPoint.name}')
 fi
+[ -n "$RP" ] || { echo "the path has no prepared RecoveryPoint to recover from"; exit 1; }
 READINESS=$(K get recoverypath "$PATH_NAME" -o jsonpath='{.status.readiness}')
 EPOCH=$(K get recoverypoint "$RP" -o jsonpath='{.spec.epoch}')
 P=$(K get recoverypoint "$RP" -o jsonpath='{.status.logicalPosition}')
@@ -66,7 +69,7 @@ echo "T_video_restore_start=$(ts)" | tee -a "$OUT/timings.txt"
   done ) &
 POLLER=$!
 
-CKPT_IMAGE="$CKPT_IMAGE" TARGET_NODE="$TARGET_NODE" ./62-activate-gitops-path.sh > "$OUT/activate.log" 2>&1
+RP="$RP" CKPT_IMAGE="$CKPT_IMAGE" TARGET_NODE="$TARGET_NODE" ./62-activate-gitops-path.sh > "$OUT/activate.log" 2>&1
 echo "T_activation_committed=$(ts)" | tee -a "$OUT/timings.txt"
 
 for _ in $(seq 1 300); do

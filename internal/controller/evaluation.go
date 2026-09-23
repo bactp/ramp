@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -35,17 +34,21 @@ func (e *evaluation) add(name string, ok, mandatory bool, reason, message string
 	})
 }
 
-// Per-stage activation costs used to derive estimatedRTO. These are measured
-// lab constants, not predictions: they say "here is the work still outstanding
-// at this readiness level", which is what the readiness level means.
-const (
-	costActivateRedisPromotion = 2 * time.Second
-	costRestoreStagedVideo     = 15 * time.Second
-	costPullArtifactToNode     = 30 * time.Second // checkpoint-agent PULL_INTERVAL
-	costColdRebuild            = 5 * time.Minute
-)
-
-func (e *evaluation) conclude(rp *rampv1alpha1.RecoveryPoint) rampv1alpha1.RecoveryPathStatus {
+// conclude maps the checks onto HOT / WARM / COLD.
+//
+// The mapping is deliberately explicit about WHY a path is not HOT, because the
+// three ways to lose HOT need three different responses:
+//
+//	stale prepared point      -> run a new epoch (or prepare the candidate faster)
+//	preparation missing       -> prepare the target
+//	target unusable           -> fix the target
+//
+// HOT now means what its documentation always claimed: an executable prepared
+// path exists AND it currently satisfies both halves of the RecoveryContract.
+// Every mandatory check is a prerequisite of the actual recovery procedure --
+// including the ones the previous version omitted, which is how a path could be
+// HOT while the checkpoint image the restore consumes did not exist anywhere.
+func (e *evaluation) conclude() rampv1alpha1.RecoveryPathStatus {
 	sort.SliceStable(e.checks, func(i, j int) bool { return e.checks[i].Name < e.checks[j].Name })
 
 	unmet := []string{}
@@ -57,47 +60,54 @@ func (e *evaluation) conclude(rp *rampv1alpha1.RecoveryPoint) rampv1alpha1.Recov
 		}
 	}
 
+	now := metav1.Now()
 	st := rampv1alpha1.RecoveryPathStatus{
 		Checks:               e.checks,
 		UnmetMandatoryChecks: unmet,
-	}
-	now := metav1.Now()
-	st.LastValidatedTime = &now
-	if rp != nil {
-		st.ObservedRecoveryPoint = rp.Name
-		st.ObservedEpoch = rp.Spec.Epoch
+		LastValidatedTime:    &now,
 	}
 
-	// ---- the state machine ------------------------------------------------
-	//   HOT  : every mandatory prerequisite holds; failure-time work is activation
-	//   WARM : a usable RecoveryPoint exists and recovery is feasible, but
-	//          preparation actions are still outstanding
-	//   COLD : no sufficiently prepared target path exists
-	hasRecoveryPoint := byName[rampv1alpha1.CheckRecoveryPointCommitted]
-	targetUsable := byName[rampv1alpha1.CheckTargetClusterReachable]
+	targetUsable := byName[rampv1alpha1.CheckTargetClusterReachable] &&
+		byName[rampv1alpha1.CheckTargetNamespaceReady] &&
+		byName[rampv1alpha1.CheckTargetPlacementFeasible]
+	haveExecutablePoint := byName[rampv1alpha1.CheckRecoveryPointCommitted] &&
+		byName[rampv1alpha1.CheckRedisEpochArtifactAvailable] &&
+		byName[rampv1alpha1.CheckVideoCheckpointAvailable]
 
 	var reason, message string
 	switch {
 	case len(unmet) == 0:
 		st.Readiness = rampv1alpha1.ReadinessHot
-		st.EstimatedRTO = (costActivateRedisPromotion + costRestoreStagedVideo).String()
-		reason = "AllPrerequisitesMet"
-		message = "all mandatory prerequisites hold; failure-time work is activation only"
-	case hasRecoveryPoint && targetUsable:
-		st.Readiness = rampv1alpha1.ReadinessWarm
-		est := costActivateRedisPromotion + costRestoreStagedVideo
-		if !byName[rampv1alpha1.CheckVideoCheckpointStaged] {
-			est += costPullArtifactToNode
-		}
-		st.EstimatedRTO = est.String()
-		reason = "PreparationOutstanding"
-		message = fmt.Sprintf("recovery is feasible from %s but %d preparation action(s) remain: %s",
-			st.ObservedRecoveryPoint, len(unmet), strings.Join(unmet, ", "))
-	default:
+		reason = "ContractSatisfiable"
+		message = "an executable prepared recovery point exists and currently satisfies both RPO and RTO; " +
+			"failure-time work is activation only"
+
+	case !targetUsable || !haveExecutablePoint:
+		// Nothing executable to fall back on: either the target cannot host a
+		// recovery at all, or no committed point with its artifacts exists.
 		st.Readiness = rampv1alpha1.ReadinessCold
-		st.EstimatedRTO = costColdRebuild.String()
-		reason = "NoPreparedPath"
-		message = fmt.Sprintf("no sufficiently prepared target path exists; unmet: %s", strings.Join(unmet, ", "))
+		reason = "NoExecutableRecoveryPath"
+		message = fmt.Sprintf("no currently executable recovery path; unmet: %s", strings.Join(unmet, ", "))
+
+	default:
+		// Recovery is feasible from the prepared point, but the contract cannot
+		// be guaranteed or preparation is incomplete. This is the case the whole
+		// candidate/prepared split exists for: a stale-but-restorable point is
+		// WARM, not COLD, and a newer point still being prepared does not move
+		// the path at all.
+		st.Readiness = rampv1alpha1.ReadinessWarm
+		switch {
+		case !byName[rampv1alpha1.CheckRecoveryPointFreshEnough]:
+			reason = "PreparedRecoveryPointStale"
+		case !byName[rampv1alpha1.CheckEstimatedRTOWithinContract]:
+			reason = "EstimatedRTOExceedsContract"
+		case !byName[rampv1alpha1.CheckRestoreArtifactReady] || !byName[rampv1alpha1.CheckActivationPlanPrepared]:
+			reason = "PreparationOutstanding"
+		default:
+			reason = "ContractNotGuaranteed"
+		}
+		message = fmt.Sprintf("recovery is feasible but the contract is not currently guaranteed; unmet: %s",
+			strings.Join(unmet, ", "))
 	}
 
 	setCondition(&st.Conditions, "Ready",

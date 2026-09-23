@@ -81,30 +81,6 @@ spec:
                 description: Epoch is the monotonically increasing epoch number.
                 format: int64
                 type: integer
-              faultInjection:
-                description: FaultInjection is test-only; see FaultInjection.
-                properties:
-                  failRedisSnapshot:
-                    description: FailRedisSnapshot aborts the epoch during CAPTURE
-                      REDIS.
-                    type: boolean
-                  failVideoCheckpoint:
-                    description: |-
-                      FailVideoCheckpoint aborts the epoch during CAPTURE VIDEO, i.e. AFTER the
-                      Redis epoch artifact already exists.
-                    type: boolean
-                  forcePositionSkew:
-                    description: |-
-                      ForcePositionSkew perturbs the recorded Redis artifact position by this
-                      many logical positions, so VALIDATE sees two artifacts that disagree.
-                    format: int64
-                    type: integer
-                  skipQuiesce:
-                    description: |-
-                      SkipQuiesce runs the epoch the old way -- without pausing the application
-                      -- so the pre-fix behaviour remains reproducible for comparison.
-                    type: boolean
-                type: object
               maxPositionSkew:
                 default: 0
                 description: |-

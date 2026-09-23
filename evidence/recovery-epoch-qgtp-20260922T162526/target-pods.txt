@@ -1,0 +1,10 @@
+NAME                                                    READY   STATUS      RESTARTS     AGE     IP             NODE                          NOMINATED NODE   READINESS GATES
+ramp-imgbuild-b7cqr                                     0/1     Completed   0            58s     10.244.1.124   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-imgrm-bcdv8                                        0/1     Completed   0            2m56s   10.244.1.116   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-prep-video-workload01-to-workload02-a24b21f4-874   0/1     Completed   0            49s     10.244.1.125   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-prep-video-workload01-to-workload02-a24b21f4-875   0/1     Completed   0            30s     10.244.1.126   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-stage-checkpoint-v-077d1af3-4hvcs                  0/1     Completed   0            3m25s   10.244.1.112   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-stage-checkpoint-v-0c52bd53-wnztk                  0/1     Completed   0            4m34s   10.244.1.106   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+ramp-stage-checkpoint-v-4beb738a-jxgx6                  0/1     Completed   0            64s     10.244.1.122   workload02-md-0-rx5mn-pjkrh   <none>           <none>
+redis-standby-77b5cd8cf7-snbrs                          1/1     Running     2 (7s ago)   12m     10.244.1.51    workload02-md-0-rx5mn-pjkrh   <none>           <none>
+video-session-667f9b85b6-jbvqf                          1/1     Running     0            3s      10.244.1.127   workload02-md-0-rx5mn-pjkrh   <none>           <none>

@@ -21,6 +21,7 @@ TARGET_NODE="${TARGET_NODE:?TARGET_NODE must be set}"
 MGMT="${MGMT:-$HOME/mgmt.kubeconfig}"
 TGT_KUBECONFIG="${TGT_KUBECONFIG:-$HOME/${TGT_CLUSTER}.kubeconfig}"
 DR_PATH="${DR_PATH:-${TGT_CLUSTER}-dr/${APP}}"
+RP="${RP:?RP (RecoveryPoint name) must be set}"
 
 GU=$(kubectl --kubeconfig "$MGMT" get secret git-user-secret -n default -o jsonpath='{.data.username}' | base64 -d)
 GP=$(kubectl --kubeconfig "$MGMT" get secret git-user-secret -n default -o jsonpath='{.data.password}' | base64 -d)
@@ -31,7 +32,8 @@ WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 
 # The entire activation: one file, two fields changed -- replicas 0 -> 1 and the
 # image swapped to the checkpoint image that containerd will restore from.
-render_recovery_manifests "$WORK" 1 "$CKPT_IMAGE" Never activated
+EPOCH=$(kubectl --kubeconfig "$MGMT" get recoverypoint "$RP" -o jsonpath='{.spec.epoch}')
+render_recovery_manifests "$WORK" 1 "$CKPT_IMAGE" Never activated "$RP" "$EPOCH" "$CKPT_IMAGE"
 put_file dr "${DR_PATH}/deployment.yaml" "$WORK/deployment.yaml" \
   "RAMP activate: restore ${APP} on ${TGT_CLUSTER} from ${CKPT_IMAGE}"
 trigger_sync "$TGT_KUBECONFIG" "${TGT_CLUSTER}-dr"

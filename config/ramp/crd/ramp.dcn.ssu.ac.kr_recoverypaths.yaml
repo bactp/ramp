@@ -20,21 +20,27 @@ spec:
     - jsonPath: .status.readiness
       name: Readiness
       type: string
-    - jsonPath: .spec.sourceCluster
-      name: Source
-      type: string
     - jsonPath: .spec.targetCluster
       name: Target
       type: string
-    - jsonPath: .status.observedRecoveryPoint
-      name: RecoveryPoint
+    - jsonPath: .status.targetPlacement.node
+      name: Node
+      type: string
+    - jsonPath: .status.preparedRecoveryPoint.name
+      name: Prepared
+      type: string
+    - jsonPath: .status.candidateRecoveryPoint.name
+      name: Candidate
+      type: string
+    - jsonPath: .status.latestRecoveryPoint.name
+      name: Latest
+      type: string
+    - jsonPath: .status.contract.recoveryPointAge
+      name: Age
       type: string
     - jsonPath: .status.estimatedRTO
       name: EstRTO
       type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -65,10 +71,8 @@ spec:
               A path is NOT merely a target cluster.
             properties:
               recoveryActions:
-                description: |-
-                  RecoveryActions documents the ordered plan this path would execute. It is
-                  descriptive in Scenario 1 (actuation stays with the Transition Operator /
-                  runbook) but it is part of the path definition, not of the target cluster.
+                description: RecoveryActions documents the ordered plan this path
+                  would execute.
                 items:
                   type: string
                 type: array
@@ -78,7 +82,8 @@ spec:
               recoveryPointRef:
                 description: |-
                   RecoveryPointRef pins the path to one RecoveryPoint. Empty means "track
-                  the group's latest committed RecoveryPoint".
+                  the group's committed RecoveryPoints", which is NOT the same as "always
+                  evaluate the newest one": see RecoveryPathStatus.
                 type: string
               sourceCluster:
                 description: SourceCluster / TargetCluster are registered cluster
@@ -89,6 +94,20 @@ spec:
               targetPrereqs:
                 description: TargetPrereqs are the target-side prerequisites to evaluate.
                 properties:
+                  activationPlanWorkload:
+                    description: |-
+                      ActivationPlanWorkload is the target workload object that preparation
+                      creates ahead of the failure and that activation merely scales up and
+                      re-images. Its annotations bind the prepared target to one RecoveryPoint.
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
                   checkpointStagingPath:
                     default: /var/lib/kubelet/checkpoints
                     description: |-
@@ -98,13 +117,13 @@ spec:
                   maxReplicationLagBytes:
                     default: 4096
                     description: |-
-                      MaxReplicationLagBytes is the largest tolerated standby lag, in
-                      replication-stream bytes, for RedisStandbyReady to hold.
+                      MaxReplicationLagBytes is the largest tolerated lag, in replication-stream
+                      bytes, for the target Redis runtime to count as warm.
                     format: int64
                     type: integer
                   minAllocatableCpuMillis:
-                    description: MinAllocatable is the minimum free capacity required
-                      on the target node.
+                    description: MinAllocatable is the minimum capacity a target node
+                      must have free.
                     format: int64
                     type: integer
                   minAllocatableMemoryMiB:
@@ -114,10 +133,16 @@ spec:
                     description: Namespace the recovered RecoveryGroup will land in
                       on the target.
                     type: string
+                  node:
+                    description: |-
+                      Node pins placement to one target node. Empty means RAMP picks the first
+                      feasible node in name order (and keeps the currently prepared node while
+                      it stays feasible, so placement does not flap).
+                    type: string
                   restoreCapabilityDaemonSet:
                     description: |-
-                      RestoreCapabilityDaemonSet is the DaemonSet whose readiness proves the
-                      target can stage and restore checkpoint artifacts.
+                      RestoreCapabilityDaemonSet is the DaemonSet whose readiness ON THE
+                      PLACEMENT NODE proves that node can stage and restore checkpoints.
                     properties:
                       name:
                         type: string
@@ -129,8 +154,8 @@ spec:
                     type: object
                   standbyEndpoint:
                     description: |-
-                      StandbyEndpoint is the target-side Redis standby the redis-replication
-                      driver will promote.
+                      StandbyEndpoint is the target-side Redis runtime. It is the instance the
+                      epoch RDB is restored INTO; it is not itself the recovery point.
                     properties:
                       host:
                         description: Host is a routable address (floating IP or DNS
@@ -156,6 +181,37 @@ spec:
           status:
             description: RecoveryPathStatus is the observed readiness of the path.
             properties:
+              candidateRecoveryPoint:
+                description: CandidateRecoveryPoint is a newer point being prepared,
+                  if any.
+                properties:
+                  commitTime:
+                    format: date-time
+                    type: string
+                  epoch:
+                    format: int64
+                    type: integer
+                  logicalPosition:
+                    format: int64
+                    type: integer
+                  message:
+                    type: string
+                  missingPreparation:
+                    description: |-
+                      MissingPreparation lists, by check name, what still has to hold before
+                      this candidate can be promoted.
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    type: string
+                  observedAt:
+                    description: ObservedAt is when this candidate was first noticed.
+                    format: date-time
+                    type: string
+                required:
+                - name
+                type: object
               checks:
                 description: |-
                   Checks carries every evaluated prerequisite with its reason, so that
@@ -240,29 +296,260 @@ spec:
                   - type
                   type: object
                 type: array
+              contract:
+                description: Contract is the RecoveryContract evaluated against the
+                  prepared point.
+                properties:
+                  activationSteps:
+                    description: |-
+                      ActivationSteps is the breakdown the estimate was summed from, so the
+                      number can be audited instead of trusted.
+                    items:
+                      description: |-
+                        ActivationStep is one deterministic unit of failure-time work, with the cost
+                        assumption used for it. The estimate is a sum of these, never a prediction.
+                      properties:
+                        cost:
+                          description: Cost is the assumed duration of this step.
+                          type: string
+                        name:
+                          type: string
+                        reason:
+                          type: string
+                        required:
+                          description: Required is false for steps already paid for
+                            by preparation.
+                          type: boolean
+                      required:
+                      - cost
+                      - name
+                      - required
+                      type: object
+                    type: array
+                  estimatedActivationLatency:
+                    description: |-
+                      EstimatedActivationLatency is the sum of the required ActivationSteps.
+                      It is explicitly NOT an end-to-end RTO: no failure detection exists yet.
+                    type: string
+                  freshEnough:
+                    type: boolean
+                  freshnessRemaining:
+                    description: |-
+                      FreshnessRemaining is RPO - age; negative values are clamped to zero and
+                      FreshEnough is false.
+                    type: string
+                  recoveryPointAge:
+                    description: RecoveryPointAge is now - preparedRecoveryPoint.commitTime.
+                    type: string
+                  rpo:
+                    type: string
+                  rto:
+                    type: string
+                  rtoWithinContract:
+                    type: boolean
+                type: object
               estimatedRTO:
-                description: |-
-                  EstimatedRTO is a deterministic sum of the remaining activation steps for
-                  the current readiness level. No prediction model is involved.
+                description: EstimatedRTO mirrors contract.estimatedActivationLatency
+                  as a string.
                 type: string
               lastValidatedTime:
                 format: date-time
                 type: string
+              latestRecoveryPoint:
+                description: |-
+                  LatestRecoveryPoint is the newest committed, validated RecoveryPoint
+                  known for the group. It is INFORMATION, not the thing readiness is
+                  evaluated against.
+                properties:
+                  commitTime:
+                    format: date-time
+                    type: string
+                  epoch:
+                    format: int64
+                    type: integer
+                  logicalPosition:
+                    format: int64
+                    type: integer
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
               observedEpoch:
                 format: int64
                 type: integer
               observedRecoveryPoint:
-                description: ObservedRecoveryPoint is the RecoveryPoint this evaluation
-                  was made against.
+                description: |-
+                  ObservedRecoveryPoint mirrors preparedRecoveryPoint.name. It is kept so
+                  that existing recovery scripts keep resolving to the point that is
+                  actually executable -- which, before this change, they did not.
                 type: string
+              preparedRecoveryPoint:
+                description: PreparedRecoveryPoint is what this path would actually
+                  recover from.
+                properties:
+                  artifacts:
+                    items:
+                      description: |-
+                        PreparedArtifact is one piece of target-side preparation, recorded with
+                        enough identity to prove it belongs to the prepared epoch and, where the
+                        artifact is node-bound, to the prepared node.
+                      properties:
+                        checksum:
+                          type: string
+                        kind:
+                          description: |-
+                            Kind is the role the artifact plays: videoCheckpoint, checkpointImage,
+                            redisSnapshot, activationPlan.
+                          type: string
+                        message:
+                          type: string
+                        node:
+                          description: Node is set for artifacts that only exist on
+                            one node.
+                          type: string
+                        ref:
+                          description: Ref is the artifact reference (minio:// URI,
+                            image tag, object name).
+                          type: string
+                        verifiedAt:
+                          format: date-time
+                          type: string
+                      required:
+                      - kind
+                      type: object
+                    type: array
+                  commitTime:
+                    format: date-time
+                    type: string
+                  epoch:
+                    format: int64
+                    type: integer
+                  executable:
+                    description: |-
+                      Executable reports whether the preparation still holds on this reconcile.
+                      A promoted RecoveryPoint whose image was deleted stays recorded here --
+                      it is still the point this path would use -- but it stops being
+                      executable, and the failing check says why.
+                    type: boolean
+                  logicalPosition:
+                    format: int64
+                    type: integer
+                  name:
+                    type: string
+                  placement:
+                    description: |-
+                      Placement is the node the preparation belongs to. Node-bound artifacts in
+                      Artifacts were verified on THIS node; evidence from any other node is not
+                      evidence for this path.
+                    properties:
+                      allocatableCpuMillis:
+                        description: |-
+                          AllocatableCPUMillis / AllocatableMemoryMiB are what Kubernetes reports
+                          the node offers after system reservations.
+                        format: int64
+                        type: integer
+                      allocatableMemoryMiB:
+                        format: int64
+                        type: integer
+                      cluster:
+                        type: string
+                      freeCpuMillis:
+                        format: int64
+                        type: integer
+                      freeMemoryMiB:
+                        format: int64
+                        type: integer
+                      node:
+                        type: string
+                      reason:
+                        type: string
+                      requestedCpuMillis:
+                        description: |-
+                          RequestedCPUMillis / RequestedMemoryMiB are the sums of the resource
+                          REQUESTS of the non-terminated pods already on the node. Allocatable
+                          minus requested is what a scheduler would treat as free; allocatable
+                          alone is not "free capacity" and is not reported as such.
+                        format: int64
+                        type: integer
+                      requestedMemoryMiB:
+                        format: int64
+                        type: integer
+                      selectedAt:
+                        format: date-time
+                        type: string
+                    required:
+                    - cluster
+                    - node
+                    type: object
+                  preparedAt:
+                    description: PreparedAt is when this RecoveryPoint was promoted
+                      from candidate.
+                    format: date-time
+                    type: string
+                required:
+                - name
+                type: object
               readiness:
-                description: Readiness is the elastic recovery-readiness level of
-                  a RecoveryPath.
+                description: "Readiness is the elastic recovery-readiness level of
+                  a RecoveryPath.\n\nThe levels are defined against the RecoveryContract,
+                  not against \"how many\nboxes are ticked\":\n\n\tHOT  : an EXECUTABLE
+                  PREPARED path exists and currently satisfies both the\n\t       RPO
+                  (the prepared RecoveryPoint is fresh enough) and the RTO (the\n\t
+                  \      remaining failure-time work fits the budget). Failure-time
+                  work is\n\t       activation only.\n\tWARM : recovery is feasible,
+                  but either preparation work remains or the\n\t       contract cannot
+                  currently be guaranteed (e.g. the prepared point has\n\t       gone
+                  stale while its successor is still being prepared).\n\tCOLD : no
+                  currently executable or sufficiently feasible recovery path."
                 enum:
                 - HOT
                 - WARM
                 - COLD
                 type: string
+              targetPlacement:
+                description: TargetPlacement is the concrete node the prepared path
+                  lands on.
+                properties:
+                  allocatableCpuMillis:
+                    description: |-
+                      AllocatableCPUMillis / AllocatableMemoryMiB are what Kubernetes reports
+                      the node offers after system reservations.
+                    format: int64
+                    type: integer
+                  allocatableMemoryMiB:
+                    format: int64
+                    type: integer
+                  cluster:
+                    type: string
+                  freeCpuMillis:
+                    format: int64
+                    type: integer
+                  freeMemoryMiB:
+                    format: int64
+                    type: integer
+                  node:
+                    type: string
+                  reason:
+                    type: string
+                  requestedCpuMillis:
+                    description: |-
+                      RequestedCPUMillis / RequestedMemoryMiB are the sums of the resource
+                      REQUESTS of the non-terminated pods already on the node. Allocatable
+                      minus requested is what a scheduler would treat as free; allocatable
+                      alone is not "free capacity" and is not reported as such.
+                    format: int64
+                    type: integer
+                  requestedMemoryMiB:
+                    format: int64
+                    type: integer
+                  selectedAt:
+                    format: date-time
+                    type: string
+                required:
+                - cluster
+                - node
+                type: object
               unmetMandatoryChecks:
                 description: UnmetMandatoryChecks lists, by name, why the path is
                   not HOT.

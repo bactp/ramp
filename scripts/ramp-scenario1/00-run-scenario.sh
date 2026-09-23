@@ -41,7 +41,7 @@ mark T_prepare_start
 RP_NAME="$RP" ./30-prepare-path.sh > "$OUT/prepare.txt" 2>&1
 for _ in $(seq 1 40); do
   R=$(K  get recoverypath video-workload01-to-workload02 -o jsonpath='{.status.readiness}')
-  OB=$(K get recoverypath video-workload01-to-workload02 -o jsonpath='{.status.observedRecoveryPoint}')
+  OB=$(K get recoverypath video-workload01-to-workload02 -o jsonpath='{.status.preparedRecoveryPoint.name}')
   [ "$R" = "HOT" ] && [ "$OB" = "$RP" ] && break
   sleep 5
 done
@@ -52,7 +52,7 @@ K get recoverypath video-workload01-to-workload02 -o yaml > "$OUT/recoverypath-H
 # Readiness is latched here: after the source dies the replication link drops,
 # so the path necessarily degrades. The recovery decision is made against the
 # readiness that held BEFORE the failure -- which is the point of keeping paths hot.
-HOT_RP=$(K get recoverypath video-workload01-to-workload02 -o jsonpath='{.status.observedRecoveryPoint}')
+HOT_RP=$(K get recoverypath video-workload01-to-workload02 -o jsonpath='{.status.preparedRecoveryPoint.name}')
 RP_POS=$(K get recoverypoint "$HOT_RP" -o jsonpath='{.status.validation.checkpointPosition}')
 echo "latched_recoverypoint=$HOT_RP position=$RP_POS" | tee -a "$T"
 

@@ -24,6 +24,11 @@ NS="${NS:-ramp-demo}"
 ROOTFS_IMAGE="${ROOTFS_IMAGE:-python:3.12-slim}"
 DR_PATH="${DR_PATH:-${TGT_CLUSTER}-dr/${APP}}"
 TARGET_NODE="${TARGET_NODE:?TARGET_NODE must be set}"
+# Preparation must name the RecoveryPoint it prepares. RAMP refuses to treat the
+# target as prepared for any point other than the one stamped here, which closes
+# the "whatever was latest when the script ran" hole.
+RP="${RP:?RP (RecoveryPoint name) must be set}"
+CKPT_IMAGE="${CKPT_IMAGE:?CKPT_IMAGE must be set: the image 35-build-checkpoint-image.sh produced for \$RP}"
 MGMT="${MGMT:-$HOME/mgmt.kubeconfig}"
 TGT_KUBECONFIG="${TGT_KUBECONFIG:-$HOME/${TGT_CLUSTER}.kubeconfig}"
 
@@ -38,8 +43,9 @@ echo "T_prepare_start=$(date -Is)"
 # Prepared state: the workload object, the Service and the ArgoCD wiring all
 # exist on the target, scaled to zero and still on the ORIGINAL image. Nothing
 # here is on the RTO path.
-render_recovery_manifests "$WORK" 0 "$ROOTFS_IMAGE" IfNotPresent prepared
-put_file dr "${DR_PATH}/deployment.yaml" "$WORK/deployment.yaml" "RAMP prepare: ${APP} scaled to zero on ${TGT_CLUSTER}"
+EPOCH=$(kubectl --kubeconfig "$MGMT" get recoverypoint "$RP" -o jsonpath='{.spec.epoch}')
+render_recovery_manifests "$WORK" 0 "$ROOTFS_IMAGE" IfNotPresent prepared "$RP" "$EPOCH" "$CKPT_IMAGE"
+put_file dr "${DR_PATH}/deployment.yaml" "$WORK/deployment.yaml" "RAMP prepare: ${APP} on ${TGT_CLUSTER} for ${RP} (replicas 0)"
 put_file dr "${DR_PATH}/svc.yaml"        "$WORK/svc.yaml"        "RAMP prepare: ${APP} service on ${TGT_CLUSTER}"
 
 # The target's DR Application recurses over <target>-dr/, so it picks these up

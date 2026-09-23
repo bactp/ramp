@@ -1,0 +1,17 @@
+T_test_start=2026-09-22T16:03:32+00:00
+placement_node=workload02-md-0-rx5mn-pjkrh
+RP1=video-stream-rg-epoch-37
+RP1_checkpoint_image=docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-37
+T_A_done=2026-09-22T16:04:17+00:00
+RP2=video-stream-rg-epoch-38
+T_B_done=2026-09-22T16:05:05+00:00
+RP2_checkpoint_image=docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-38
+T_C_done=2026-09-22T16:05:30+00:00
+estimated_activation_latency=12s
+T_G_done=2026-09-22T16:05:35+00:00
+T_E_detect_seconds=34
+T_E_done=2026-09-22T16:06:59+00:00 readiness_after_rebuild=HOT
+T_F_done=2026-09-22T16:07:09+00:00 readiness_after_uncordon=HOT
+D_rpo_seconds=182 D_age_at_start=162
+T_D_stale_transition=2026-09-22T16:07:31+00:00
+T_D_done=2026-09-22T16:07:34+00:00 readiness_after_contract_restored=HOT

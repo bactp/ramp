@@ -1,6 +1,11 @@
 # One manually specified, deterministically evaluated recovery path.
 # Scenario 1 does not search for paths and does not rank them; it answers
 # "is THIS path executable right now, and if not, exactly what is missing?"
+#
+# Readiness is evaluated against the PREPARED RecoveryPoint, not the newest one.
+# A newer committed epoch becomes a CANDIDATE and is prepared in the background;
+# it only replaces the prepared point once its own target-side preparation is
+# proven complete. See docs/ramp-scenario1/prepared-recovery-point.md.
 apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
 kind: RecoveryPath
 metadata:
@@ -10,10 +15,13 @@ spec:
   recoveryGroupRef: video-stream-rg
   sourceCluster: workload01
   targetCluster: workload02
-  # empty recoveryPointRef = track the group's latest committed RecoveryPoint
+  # empty recoveryPointRef = track the group's committed RecoveryPoints, which
+  # is NOT the same as "always evaluate the newest one"
 
   targetPrereqs:
     namespace: ramp-demo
+    # node: left empty -- RAMP selects one concrete feasible node and keeps it
+    # while it stays feasible. Set it to pin placement.
     standbyEndpoint:
       host: 192.168.28.122   # workload02 NodePort via floating IP
       port: 30380
@@ -22,12 +30,18 @@ spec:
     restoreCapabilityDaemonSet:
       name: checkpoint-agent
       namespace: kube-system
+    # The target workload object that preparation creates ahead of the failure.
+    # Its annotations bind the prepared target to ONE RecoveryPoint, which is
+    # what stops "the target is prepared" from meaning "some script ran once".
+    activationPlanWorkload:
+      namespace: ramp-demo
+      name: video-session
     minAllocatableCpuMillis: 2000
     minAllocatableMemoryMiB: 2048
 
   recoveryActions:
-    - "promote redis standby on workload02 (REPLICAOF NO ONE)"
-    - "verify redis role=master and logical position >= recovery point position"
-    - "restore video container from the staged checkpoint artifact"
-    - "verify the restored video position is consistent with redis"
-    - "switch service traffic to workload02"
+    - "restore redis on workload02 from the RecoveryPoint's immutable epoch RDB"
+    - "verify redis logical position == the RecoveryPoint's position, before starting video"
+    - "activate the prepared video workload with the epoch's CRI checkpoint image"
+    - "verify the restored video position == the RecoveryPoint's position"
+    - "release the restored application and switch service traffic to workload02"

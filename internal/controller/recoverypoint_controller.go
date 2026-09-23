@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -123,10 +124,7 @@ func (r *RecoveryPointReconciler) runEpoch(ctx context.Context, rp *rampv1alpha1
 	rg *rampv1alpha1.RecoveryGroup) (ctrl.Result, error) {
 
 	log := logf.FromContext(ctx)
-	fi := rp.Spec.FaultInjection
-	if fi == nil {
-		fi = &rampv1alpha1.FaultInjection{}
-	}
+	fi := parseFaultInjection(rp)
 
 	// ======================================================== PREPARE ======
 	rp.Status.Phase = rampv1alpha1.RecoveryPointPreparing
@@ -256,7 +254,7 @@ func (r *RecoveryPointReconciler) runEpoch(ctx context.Context, rp *rampv1alpha1
 		P, qState = st.Position, st
 		rp.Status.Quiesce = rampv1alpha1.QuiesceStatus{
 			Quiesced: false, Position: P, InstanceFingerprint: st.Session,
-			Message: "faultInjection.skipQuiesce: application was NOT paused (pre-fix behaviour)",
+			Message: "test fault injection (skipQuiesce): application was NOT paused (pre-fix behaviour)",
 		}
 	} else {
 		st, err := quiesceMember(ctx, src, videoM.resolved.Namespace, videoM.resolved.PodName,
@@ -340,7 +338,7 @@ func (r *RecoveryPointReconciler) runEpoch(ctx context.Context, rp *rampv1alpha1
 
 	if fi.FailRedisSnapshot {
 		return r.abort(ctx, rp, resume, "RedisSnapshotFailed",
-			"faultInjection.failRedisSnapshot: epoch-specific Redis capture forced to fail")
+			"test fault injection (failRedisSnapshot): epoch-specific Redis capture forced to fail")
 	}
 
 	snapCtx, cancelSnap := context.WithTimeout(ctx, captureTimeout)
@@ -421,7 +419,7 @@ func (r *RecoveryPointReconciler) runEpoch(ctx context.Context, rp *rampv1alpha1
 
 	if fi.FailVideoCheckpoint {
 		return r.abort(ctx, rp, resume, "CheckpointFailed",
-			"faultInjection.failVideoCheckpoint: container checkpoint forced to fail AFTER the Redis epoch artifact was created")
+			"test fault injection (failVideoCheckpoint): container checkpoint forced to fail AFTER the Redis epoch artifact was created")
 	}
 
 	preCkpt, err := readMemberState(ctx, src, videoM.resolved.Namespace, videoM.resolved.PodName, videoM.spec.Container)
@@ -641,32 +639,92 @@ func (r *RecoveryPointReconciler) abort(ctx context.Context, rp *rampv1alpha1.Re
 
 // abortInterrupted handles an epoch that will never be completed, releasing any
 // application it may have left paused.
+//
+// The ApplicationResumed condition reports what was actually established, not
+// what was attempted. Three outcomes are genuinely different and were
+// previously collapsed into an unconditional True:
+//
+//	True     the quiesce was released and the application confirmed running
+//	False    a member was found and the release failed
+//	Unknown  no member could be resolved, so nothing can be said either way
+//
+// Publishing True for the third case is worse than publishing nothing: it tells
+// an operator the cleanup succeeded on a workload the controller never reached,
+// and a source application left paused is exactly the failure this condition
+// exists to make visible.
 func (r *RecoveryPointReconciler) abortInterrupted(ctx context.Context, rp *rampv1alpha1.RecoveryPoint,
 	rg *rampv1alpha1.RecoveryGroup, reason, msg string) (ctrl.Result, error) {
 
 	log := logf.FromContext(ctx)
-	// Best-effort release of an application the dead process may have left
-	// paused. It is best-effort because the group may itself be unresolvable
-	// now; the epoch is failed either way.
-	if src, err := r.Clusters.Get(rg.Spec.AppBundleRef.Cluster); err == nil {
-		if ab, err := GetAppBundle(ctx, src.Client, rg.Spec.AppBundleRef); err == nil {
-			for _, m := range rg.Spec.Members {
-				if m.RecoveryDriver != rampv1alpha1.DriverContainerCheckpoint {
-					continue
-				}
-				if rc, err := ResolveComponent(ctx, src.Client, ab, m.ComponentRef); err == nil {
-					if err := resumeMember(src, rc.Namespace, rc.PodName, m.Container); err != nil {
-						log.Error(err, "could not release the application after an interrupted epoch")
-					}
-				}
-			}
+
+	var (
+		attempted  int
+		released   int
+		unresolved []string
+		failures   []string
+	)
+	src, clusterErr := r.Clusters.Get(rg.Spec.AppBundleRef.Cluster)
+	var ab *unstructured.Unstructured
+	var abErr error
+	if clusterErr == nil {
+		ab, abErr = GetAppBundle(ctx, src.Client, rg.Spec.AppBundleRef)
+	}
+	for _, m := range rg.Spec.Members {
+		if m.RecoveryDriver != rampv1alpha1.DriverContainerCheckpoint {
+			continue
+		}
+		attempted++
+		switch {
+		case clusterErr != nil:
+			unresolved = append(unresolved, fmt.Sprintf("%s (cluster %s: %v)", m.Name, rg.Spec.AppBundleRef.Cluster, clusterErr))
+			continue
+		case abErr != nil:
+			unresolved = append(unresolved, fmt.Sprintf("%s (AppBundle: %v)", m.Name, abErr))
+			continue
+		}
+		rc, rerr := ResolveComponent(ctx, src.Client, ab, m.ComponentRef)
+		if rerr != nil {
+			unresolved = append(unresolved, fmt.Sprintf("%s (%v)", m.Name, rerr))
+			continue
+		}
+		if err := resumeMember(src, rc.Namespace, rc.PodName, m.Container); err != nil {
+			log.Error(err, "could not release the application after an interrupted epoch", "member", m.Name)
+			failures = append(failures, fmt.Sprintf("%s (%v)", m.Name, err))
+			continue
+		}
+		// Released -- and confirm it, rather than assuming the write landed.
+		if st, err := readMemberState(ctx, src, rc.Namespace, rc.PodName, m.Container); err != nil {
+			unresolved = append(unresolved, fmt.Sprintf("%s (released, but state unreadable: %v)", m.Name, err))
+		} else if st.Quiesced {
+			failures = append(failures, fmt.Sprintf("%s (still reports quiesced=true at position %d)", m.Name, st.Position))
+		} else {
+			released++
 		}
 	}
-	setCondition(&rp.Status.Conditions, "ApplicationResumed", metav1.ConditionTrue, "ResumedAfterAbort",
-		"the application was released after the epoch was abandoned", rp.Generation)
-	rp.Status.Quiesce.Quiesced = false
-	rp.Status.Quiesce.ResumedAt = nowp()
-	rp.Status.Timings.ResumeTime = rp.Status.Quiesce.ResumedAt
+
+	switch {
+	case attempted > 0 && released == attempted:
+		setCondition(&rp.Status.Conditions, "ApplicationResumed", metav1.ConditionTrue, "ResumedAfterAbort",
+			fmt.Sprintf("%d/%d checkpoint member(s) confirmed running after the epoch was abandoned", released, attempted),
+			rp.Generation)
+		rp.Status.Quiesce.Quiesced = false
+		rp.Status.Quiesce.ResumedAt = nowp()
+		rp.Status.Timings.ResumeTime = rp.Status.Quiesce.ResumedAt
+	case len(failures) > 0:
+		setCondition(&rp.Status.Conditions, "ApplicationResumed", metav1.ConditionFalse, "ResumeFailed",
+			"the application could not be released: "+joinLines(failures), rp.Generation)
+		rp.Status.Quiesce.Message = "resume failed: " + joinLines(failures)
+	case len(unresolved) > 0:
+		// Nothing was reached, so nothing is known. Do NOT claim success.
+		setCondition(&rp.Status.Conditions, "ApplicationResumed", metav1.ConditionUnknown, "ResumeUnverified",
+			"the checkpoint member could not be resolved, so whether it is still quiesced is unknown: "+
+				joinLines(unresolved)+". If the source is paused it has to be released by hand.", rp.Generation)
+		rp.Status.Quiesce.Message = "resume unverified: " + joinLines(unresolved)
+	default:
+		setCondition(&rp.Status.Conditions, "ApplicationResumed", metav1.ConditionUnknown, "NoCheckpointMember",
+			"the RecoveryGroup has no container-checkpoint member, so no application was paused by this epoch",
+			rp.Generation)
+	}
 	return r.abort(ctx, rp, nil, reason, msg)
 }
 

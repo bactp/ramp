@@ -1,0 +1,205 @@
+T_epoch_requested=2026-09-22T16:25:26+00:00
+recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-48 created
+waiting for epoch 48 to reach a terminal phase...
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{"ramp.dcn.ssu.ac.kr/test-fault-injection":""},"name":"video-stream-rg-epoch-48","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":48,"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+    ramp.dcn.ssu.ac.kr/test-fault-injection: ""
+  creationTimestamp: "2026-09-22T16:25:27Z"
+  generation: 1
+  name: video-stream-rg-epoch-48
+  namespace: default
+  resourceVersion: "45731062"
+  uid: ecec4dde-7c14-45d9-8325-b48dffc6dea6
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 48
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  artifacts:
+  - capturedAt: "2026-09-22T16:25:31Z"
+    checksum: df92429097af4504bc6cd45d963042543dfa3f9ac7e0b847a677e1b713424167
+    checksumAlgorithm: sha256
+    driver: redis-replication
+    epoch: 48
+    immutable: true
+    logicalPosition: 409
+    member: redis
+    message: 'synchronous SAVE on the quiesced primary ramp-demo/redis-primary-579fc4d97c-zhms9;
+      BGSAVE_STATUS=ok SIZE=380 '
+    ref: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-48.rdb
+    replicationId: 8a96b146f59d2b050da1f026afedcaa6072283ed
+    replicationOffset: 52911
+    sizeBytes: 380
+    type: redisSnapshot
+  - capturedAt: "2026-09-22T16:25:31Z"
+    driver: redis-replication
+    epoch: 48
+    logicalPosition: 409
+    member: redis
+    message: 'DIAGNOSTIC ONLY: the live stream keeps advancing after commit and cannot
+      identify this epoch; recovery uses the redisSnapshot artifact'
+    ref: redis-repl://192.168.28.238:30379/52911
+    replicationId: 8a96b146f59d2b050da1f026afedcaa6072283ed
+    replicationOffset: 52911
+    type: replicationState
+  - capturedAt: "2026-09-22T16:25:32Z"
+    checksum: 96ac0db282a51f88751dda993a16bbe5
+    checksumAlgorithm: etag-md5
+    driver: container-checkpoint
+    epoch: 48
+    immutable: true
+    instanceFingerprint: 9ecffb68-d3fb-464a-b5f6-56d50050253c
+    logicalPosition: 409
+    member: video
+    message: kubelet checkpoint took 1.297s while quiesced=true; instance 9ecffb68-d3fb-464a-b5f6-56d50050253c
+    nodeName: workload01-md-0-4qfvd-gnqcb
+    nodePath: /var/lib/kubelet/checkpoints/checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar
+    ref: minio://checkpoints/checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar
+    sizeBytes: 10477056
+    type: containerCheckpoint
+  barrier:
+    ackedReplicas: 1
+    endpoint: 192.168.28.238:30379
+    established: true
+    establishedAt: "2026-09-22T16:25:30Z"
+    markerOffset: 52911
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 52911 (stream
+      8a96b146f59d...)
+    position: 409
+    replicationId: 8a96b146f59d2b050da1f026afedcaa6072283ed
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-22T16:25:27Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-x5hwh
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-22T16:25:30Z"
+    message: position held at 409 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-22T16:25:30Z"
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 52911 (stream
+      8a96b146f59d...)
+    observedGeneration: 1
+    reason: ReplicaAcknowledged
+    status: "True"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-22T16:25:31Z"
+    message: immutable RDB minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-48.rdb
+      (380 bytes, sha256 df92429097af...) frozen at position 409
+    observedGeneration: 1
+    reason: SnapshotUploaded
+    status: "True"
+    type: RedisStateCaptured
+  - lastTransitionTime: "2026-09-22T16:25:36Z"
+    message: immutable checkpoint minio://checkpoints/checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar
+      (10477056 bytes) at position 409
+    observedGeneration: 1
+    reason: CheckpointLanded
+    status: "True"
+    type: VideoStateCaptured
+  - lastTransitionTime: "2026-09-22T16:25:36Z"
+    message: video checkpoint and immutable redis snapshot both belong to epoch 48
+      at logical position 409 (skew 0)
+    observedGeneration: 1
+    reason: ConsistentAcrossDrivers
+    status: "True"
+    type: Validated
+  - lastTransitionTime: "2026-09-22T16:25:36Z"
+    message: epoch 48 committed at logical position 409 with 2 immutable artifacts
+    observedGeneration: 1
+    reason: EpochCommitted
+    status: "True"
+    type: Committed
+  - lastTransitionTime: "2026-09-22T16:25:36Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  lastSuccessfulStage: Committed
+  logicalPosition: 409
+  message: epoch 48 committed at logical position 409 with 2 immutable artifacts
+  phase: Committed
+  quiesce:
+    instanceFingerprint: 9ecffb68-d3fb-464a-b5f6-56d50050253c
+    message: position held at 409 across 2 samples 3s apart
+    position: 409
+    quiesced: false
+    quiescedAt: "2026-09-22T16:25:30Z"
+    resumedAt: "2026-09-22T16:25:36Z"
+    verifySamples:
+    - 409
+    - 409
+  runId: ea762037-9b84-4498-a331-197a42164104
+  timings:
+    barrierReached: "2026-09-22T16:25:30Z"
+    captureComplete: "2026-09-22T16:25:36Z"
+    captureStart: "2026-09-22T16:25:30Z"
+    commitTime: "2026-09-22T16:25:36Z"
+    prepareStart: "2026-09-22T16:25:27Z"
+    quiesceComplete: "2026-09-22T16:25:30Z"
+    quiesceStart: "2026-09-22T16:25:27Z"
+    redisSnapshotComplete: "2026-09-22T16:25:31Z"
+    redisSnapshotStart: "2026-09-22T16:25:30Z"
+    resumeTime: "2026-09-22T16:25:36Z"
+    validateComplete: "2026-09-22T16:25:36Z"
+    videoCheckpointComplete: "2026-09-22T16:25:36Z"
+    videoCheckpointStart: "2026-09-22T16:25:31Z"
+  validation:
+    checkpointPosition: 409
+    checks:
+    - detail: quiesced=true at position 409, samples [409 409]
+      name: ApplicationQuiescedAtP
+      passed: true
+    - detail: WAIT 1 -> 1 acks at offset 52911 for position 409
+      name: RedisBarrierAcknowledgedP
+      passed: true
+    - detail: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-48.rdb immutable=true
+        checksum=df92429097af...
+      name: RedisArtifactExists
+      passed: true
+    - detail: minio://checkpoints/checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar
+        immutable=true checksum=96ac0db282a5...
+      name: VideoArtifactExists
+      passed: true
+    - detail: ramp-redis-epoch/video-stream-rg-epoch-48.rdb present in checkpoints
+      name: RedisArtifactReadable
+      passed: true
+    - detail: all artifacts stamped epoch=48
+      name: ArtifactsShareEpoch
+      passed: true
+    - detail: checkpoint metadata logical position 409 vs epoch position 409
+      name: VideoArtifactPositionIsP
+      passed: true
+    - detail: redis snapshot logical position 409 vs epoch position 409
+      name: RedisArtifactPositionIsP
+      passed: true
+    - detail: observed skew 0, tolerance 0
+      name: CrossMemberSkewWithinTolerance
+      passed: true
+    - detail: 2 immutable artifacts for 2 members
+      name: EveryMemberRepresented
+      passed: true
+    message: video checkpoint and immutable redis snapshot both belong to epoch 48
+      at logical position 409 (skew 0)
+    reason: ConsistentAcrossDrivers
+    redisSnapshotPosition: 409
+    replicatedPosition: 409
+    validated: true
+T_epoch_observed=2026-09-22T16:25:37+00:00
+recovery_point=video-stream-rg-epoch-48
