@@ -1,0 +1,101 @@
+T_epoch_requested=2026-09-23T00:36:27+00:00
+recoverypoint.ramp.dcn.ssu.ac.kr/video-stream-rg-epoch-53 created
+waiting for epoch 53 to reach a terminal phase...
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPoint
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPoint","metadata":{"annotations":{"ramp.dcn.ssu.ac.kr/test-fault-injection":"{\"failRedisSnapshot\":true}"},"name":"video-stream-rg-epoch-53","namespace":"default"},"spec":{"barrierTimeoutSeconds":30,"captureTimeoutSeconds":300,"epoch":53,"maxPositionSkew":0,"quiesceVerifySeconds":3,"recoveryGroupRef":"video-stream-rg","requiredReplicaAcks":1}}
+    ramp.dcn.ssu.ac.kr/test-fault-injection: '{"failRedisSnapshot":true}'
+  creationTimestamp: "2026-09-23T00:36:27Z"
+  generation: 1
+  name: video-stream-rg-epoch-53
+  namespace: default
+  resourceVersion: "46003062"
+  uid: 2ccdb74a-72fd-423b-9bdc-f9b505d0b51d
+spec:
+  barrierTimeoutSeconds: 30
+  captureTimeoutSeconds: 300
+  epoch: 53
+  maxPositionSkew: 0
+  quiesceVerifySeconds: 3
+  recoveryGroupRef: video-stream-rg
+  requiredReplicaAcks: 1
+status:
+  barrier:
+    ackedReplicas: 1
+    endpoint: 192.168.28.238:30379
+    established: true
+    establishedAt: "2026-09-23T00:36:31Z"
+    markerOffset: 3808609
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 3808609 (stream
+      d030c0bb7826...)
+    position: 28848
+    replicationId: d030c0bb78260203efad78b5e316deb9e4de84af
+    requiredReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-23T00:36:28Z"
+    message: redis primary 192.168.28.238:30379 role=master connectedReplicas=1; artifact
+      store bucket checkpoints reachable; checkpoint member ramp-demo/video-session-5c6684c9b7-l2hbw
+      reachable on node workload01-md-0-4qfvd-gnqcb
+    observedGeneration: 1
+    reason: PrerequisitesMet
+    status: "True"
+    type: Prepared
+  - lastTransitionTime: "2026-09-23T00:36:31Z"
+    message: position held at 28848 across 2 samples 3s apart
+    observedGeneration: 1
+    reason: QuiesceStage
+    status: "True"
+    type: ApplicationQuiesced
+  - lastTransitionTime: "2026-09-23T00:36:31Z"
+    message: WAIT 1 acknowledged by 1 replica(s) at replication offset 3808609 (stream
+      d030c0bb7826...)
+    observedGeneration: 1
+    reason: ReplicaAcknowledged
+    status: "True"
+    type: RedisBarrierEstablished
+  - lastTransitionTime: "2026-09-23T00:36:32Z"
+    message: the source application was released after the epoch finished
+    observedGeneration: 1
+    reason: Resumed
+    status: "True"
+    type: ApplicationResumed
+  - lastTransitionTime: "2026-09-23T00:36:32Z"
+    message: 'epoch aborted after stage BarrierEstablished: test fault injection (failRedisSnapshot):
+      epoch-specific Redis capture forced to fail'
+    observedGeneration: 1
+    reason: RedisSnapshotFailed
+    status: "False"
+    type: Committed
+  failureReason: RedisSnapshotFailed
+  lastSuccessfulStage: BarrierEstablished
+  logicalPosition: 28848
+  message: 'test fault injection (failRedisSnapshot): epoch-specific Redis capture
+    forced to fail'
+  phase: Failed
+  quiesce:
+    instanceFingerprint: 831844db-d532-43d9-93ae-be3f3f95b0d0
+    message: position held at 28848 across 2 samples 3s apart
+    position: 28848
+    quiesced: false
+    quiescedAt: "2026-09-23T00:36:31Z"
+    resumedAt: "2026-09-23T00:36:32Z"
+    verifySamples:
+    - 28848
+    - 28848
+  runId: d8741f01-4387-47a6-bcf7-14e9817db581
+  timings:
+    barrierReached: "2026-09-23T00:36:31Z"
+    captureStart: "2026-09-23T00:36:31Z"
+    prepareStart: "2026-09-23T00:36:27Z"
+    quiesceComplete: "2026-09-23T00:36:31Z"
+    quiesceStart: "2026-09-23T00:36:28Z"
+    redisSnapshotStart: "2026-09-23T00:36:31Z"
+    resumeTime: "2026-09-23T00:36:32Z"
+  validation:
+    reason: RedisSnapshotFailed
+    validated: false
+T_epoch_observed=2026-09-23T00:36:32+00:00
+recovery_point=video-stream-rg-epoch-53

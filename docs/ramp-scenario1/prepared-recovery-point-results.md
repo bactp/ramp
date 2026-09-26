@@ -206,3 +206,71 @@ scripts/ramp-scenario1/99-readiness-stability.sh             # no-flap regressio
 scripts/ramp-scenario1/95-qgtp-experiment.sh                 # Q > P regression
 scripts/ramp-scenario1/96-negative-tests.sh                  # epoch abort paths
 ```
+
+## 10. Re-verification, 2026-09-23
+
+The controller was left running unattended for ~8 hours and then re-checked.
+
+### What was correct
+
+The readiness verdict had held, and for the right reason. Eight hours after the
+last epoch:
+
+```
+readiness   : WARM
+unmet       : [RecoveryPointFreshEnough]
+prepared    : video-stream-rg-epoch-48   executable = true
+contract    : rpo=30m0s age=7h46m17s fresh=false | rto=1m0s est=12s within=true
+11 of 12 checks True; the only failure is RecoveryPointStale
+```
+
+That is precisely the "prepared but stale" case: every artifact still in place,
+the point still restorable, `executable: true`, and readiness withheld only
+because recovering from it would lose more than the contract allows. Probe pods
+were bounded at two (the current generation and the previous one), as designed.
+
+### Defect found: the status was written ~10 times a second
+
+The controller was spinning. With a 10 s resync configured it was reconciling
+about once a second and writing status about ten times a second, and 6042
+conflict errors had accumulated in the log.
+
+Cause: the status carries fields that advance on their own — `lastValidatedTime`,
+every check's `lastProbeTime`, `selectedAt`, the prepared point's age, and the
+target Redis replication offset inside a check message. Every pass differed from
+the last, so every pass wrote, so every write fired the object's own watch, so
+the watch drove the next pass. Each of those passes also listed every node and
+pod on the target cluster and stat-ed two MinIO objects.
+
+The published *values* were correct the whole time, which is why a full passing
+test suite did not catch it: the tests asserted what the status said, never how
+often it said it.
+
+Fixed by publishing on semantic change with a 30 s heartbeat, and by requeueing
+a write conflict quietly instead of logging it as an error — see
+[contract-aware-readiness.md §9](contract-aware-readiness.md#9-publishing-the-status-is-written-on-change-not-on-every-pass).
+
+| | before | after |
+| --- | --- | --- |
+| status writes | ~1150 per 2 min | **4 per 2 min** (heartbeat floor) |
+| reconciles | 644 per 10 min | ~12 per 2 min (the resync) |
+| conflict errors | ~21 per 2 min | **0** |
+
+### Defect found: the stability test could not establish its own precondition
+
+`99-readiness-stability.sh` treated "not HOT" as "not prepared", so when it ran
+against a path whose prepared point was eight hours old it re-prepared that
+stale point, waited for a HOT that could never arrive, and then recorded 36
+useless non-HOT samples. Preparation cannot fix staleness — that separation is
+the whole design. The setup now creates a *new* epoch, and fails fast with the
+unmet checks if HOT is still not reached.
+
+### Re-verified after both fixes
+
+| suite | result |
+| --- | --- |
+| state machine, Tests A–G | 8/8 PASS — `evidence/prepared-recovery-point-20260923T003050/` |
+| readiness stability, 36 samples over 3 min | 0 non-HOT — `evidence/readiness-stability-20260923T004005/` |
+| RecoveryEpoch negative tests | 4/4 PASS — `evidence/recovery-epoch-negative-20260923T003557/` |
+| Q > P correctness regression | PASS, P=28870 Q=28909, Redis and Video both restored to 28870 — `evidence/recovery-epoch-qgtp-20260923T003708/` |
+| controller errors across the entire run | **0** |

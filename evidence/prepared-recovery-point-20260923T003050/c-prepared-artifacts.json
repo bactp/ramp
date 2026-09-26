@@ -1,0 +1,57 @@
+{
+    "artifacts": [
+        {
+            "checksum": "ef3a33bfe41f8f5a391a994f94e9117969db1cbe98211e28e1aff2226a4536be",
+            "kind": "redisSnapshot",
+            "message": "ramp-redis-epoch/video-stream-rg-epoch-51.rdb (353 bytes) frozen at logical position 28585",
+            "ref": "minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-51.rdb",
+            "verifiedAt": "2026-09-23T00:32:54Z"
+        },
+        {
+            "checksum": "a72de9b48f09016d6ed2674a4d808f0e",
+            "kind": "videoCheckpoint",
+            "message": "checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:31:41Z.tar (10564608 bytes) present in bucket checkpoints",
+            "ref": "minio://checkpoints/checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:31:41Z.tar",
+            "verifiedAt": "2026-09-23T00:32:54Z"
+        },
+        {
+            "kind": "activationPlan",
+            "message": "target workload ramp-demo/video-session exists (replicas=0, state=\"prepared\"), prepared for video-stream-rg-epoch-51 epoch 51, pinned to node workload02-md-0-rx5mn-pjkrh, checkpoint image docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-51",
+            "node": "workload02-md-0-rx5mn-pjkrh",
+            "ref": "docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-51",
+            "verifiedAt": "2026-09-23T00:32:54Z"
+        },
+        {
+            "kind": "videoCheckpointOnNode",
+            "message": "staged in the kubelet checkpoint directory",
+            "node": "workload02-md-0-rx5mn-pjkrh",
+            "ref": "checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:31:41Z.tar",
+            "verifiedAt": "2026-09-23T00:32:54Z"
+        },
+        {
+            "kind": "checkpointImage",
+            "message": "present in the node's containerd image store",
+            "node": "workload02-md-0-rx5mn-pjkrh",
+            "ref": "docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-51",
+            "verifiedAt": "2026-09-23T00:32:54Z"
+        }
+    ],
+    "commitTime": "2026-09-23T00:31:46Z",
+    "epoch": 51,
+    "executable": true,
+    "logicalPosition": 28585,
+    "name": "video-stream-rg-epoch-51",
+    "placement": {
+        "allocatableCpuMillis": 8000,
+        "allocatableMemoryMiB": 15888,
+        "cluster": "workload02",
+        "freeCpuMillis": 5990,
+        "freeMemoryMiB": 15064,
+        "node": "workload02-md-0-rx5mn-pjkrh",
+        "reason": "PreservedPreviousPlacement",
+        "requestedCpuMillis": 2010,
+        "requestedMemoryMiB": 824,
+        "selectedAt": "2026-09-23T00:32:54Z"
+    },
+    "preparedAt": "2026-09-23T00:32:54Z"
+}

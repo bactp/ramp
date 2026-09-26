@@ -1,0 +1,9 @@
+case=test4-position-mismatch
+recoveryPoint=video-stream-rg-epoch-55
+phase=Failed
+lastSuccessfulStage=CapturingVideo
+failureReason=ValidationFailed (expected ValidationFailed)
+message=epoch is not a restorable recovery point: RedisArtifactPositionIsP (redis snapshot logical position 28863 vs epoch position 28860); CrossMemberSkewWithinTolerance (observed skew 3, tolerance 0)
+application quiesced after epoch=False
+application position before=28859 after=28865 (must advance)
+verdict=PASS

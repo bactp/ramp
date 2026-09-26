@@ -48,7 +48,7 @@ evidence/                captured runtime evidence
 | | |
 |---|---|
 | [00 — Existing system audit](docs/ramp-scenario1/00-existing-system-audit.md) | What is actually deployed, and the network facts that shaped everything |
-| [01 — Integration design](docs/ramp-scenario1/01-integration-design.md) | Architecture, responsibility table, boundary decisions |
+| [01 — Integration design](docs/ramp-scenario1/01-integration-design.md) | Prototype deployment vs target architecture (§0), responsibility table, boundary decisions |
 | [02 — Scenario 1](docs/ramp-scenario1/02-scenario1-video-redis.md) | Video + Redis, the epoch, the path |
 | [03 — Deployment and test](docs/ramp-scenario1/03-deployment-and-test.md) | How to run it |
 | [04 — Results](docs/ramp-scenario1/04-results.md) | What worked, what failed, timings |

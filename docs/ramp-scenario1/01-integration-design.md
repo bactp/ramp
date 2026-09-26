@@ -7,7 +7,79 @@ justified from evidence in
 
 ---
 
-## 1. Architecture
+## 0. Prototype deployment vs target RAMP architecture
+
+Two different things are easy to conflate, and the rest of this document is
+about the first one. **What runs today** is a prototype placement chosen for the
+testbed. **What RAMP is** is a split between a management plane and workload
+clusters that the prototype only partly realises. Anything below that says
+"runs on mgmt" describes the prototype, not the architecture.
+
+### 0.1 Prototype deployment (what actually runs)
+
+```
+Mgmt cluster (sre-control)
+  ramp-manager  — ONE process, three separate reconcilers
+                  (runs as a host process on sre-control, not as a Pod)
+    → RecoveryGroup Controller       implemented
+    → RecoveryPoint Controller       implemented  (the Recovery Epoch)
+    → RecoveryPath Controller        implemented  (readiness: observe only)
+    → Preparation                    NOT a controller — scripts 30-/36-prepare-*.sh
+    → Recovery execution             NOT a controller — scripts 48-/50-/60-/62-*.sh,
+                                     standing in for the Transition Operator
+
+Workload clusters (workload01 source, workload02 target)
+  → NO RAMP-owned component runs here
+  → checkpoint-agent                 pre-existing DaemonSet, reused unchanged
+  → RAMP reaches in from mgmt via apiserver exec, the kubelet node proxy,
+    and short-lived read-only probe Pods
+```
+
+There is **no recovery controller** in the prototype. Readiness is decided by a
+controller; the transitions that change readiness (preparing a path) and the
+recovery itself are scripts run by hand.
+
+### 0.2 Target RAMP architecture
+
+```
+Management plane
+  → policy                 which targets are permissible, what was approved
+                           (ClusterPolicy stays the authorisation layer)
+  → readiness planning     which paths to keep HOT, under what budget
+  → path selection         which prepared path to execute on failure
+  → epoch coordination     drive the Recovery Epoch across members
+
+Workload cluster
+  → application observation   members, positions, replication state, seen locally
+  → checkpoint agent          node-local artifact upload / staging
+  → capability agent          reports which recovery mechanisms this cluster
+                              and node can actually perform
+  → transition actuator       executes checkpoint, promotion, restore locally
+```
+
+The management plane **decides**; the workload cluster **observes and acts**.
+
+### 0.3 From the prototype to the target
+
+| Target role | Prototype today | Gap |
+|---|---|---|
+| policy | ClusterPolicy (existing), not consumed by RAMP | ClusterPolicy adapter (§7) |
+| readiness planning | RecoveryPath Controller evaluates one manually specified path | no budget, no choice of which paths to keep HOT |
+| path selection | one path, chosen by hand | no selection |
+| epoch coordination | RecoveryPoint Controller on mgmt | matches the target |
+| application observation | done **from mgmt** through apiserver exec | should be workload-local |
+| checkpoint agent | existing DaemonSet | matches the target |
+| capability agent | none; RecoveryPath probes capability from mgmt | missing |
+| transition actuator | shell scripts run by hand | missing |
+
+The mgmt-side placement of the observation work is a testbed decision, not an
+architectural one: the Checkpoint API is mgmt-only and cross-cluster traffic has
+to go through floating IPs (§4). It is what should move first once a workload
+agent exists.
+
+---
+
+## 1. Architecture (prototype deployment)
 
 ```mermaid
 flowchart TB

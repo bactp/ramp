@@ -1,0 +1,261 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryPath
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryPath","metadata":{"annotations":{},"name":"video-workload01-to-workload02","namespace":"default"},"spec":{"recoveryActions":["restore redis on workload02 from the RecoveryPoint's immutable epoch RDB","verify redis logical position == the RecoveryPoint's position, before starting video","activate the prepared video workload with the epoch's CRI checkpoint image","verify the restored video position == the RecoveryPoint's position","release the restored application and switch service traffic to workload02"],"recoveryGroupRef":"video-stream-rg","sourceCluster":"workload01","targetCluster":"workload02","targetPrereqs":{"activationPlanWorkload":{"name":"video-session","namespace":"ramp-demo"},"checkpointStagingPath":"/var/lib/kubelet/checkpoints","maxReplicationLagBytes":4096,"minAllocatableCpuMillis":2000,"minAllocatableMemoryMiB":2048,"namespace":"ramp-demo","restoreCapabilityDaemonSet":{"name":"checkpoint-agent","namespace":"kube-system"},"standbyEndpoint":{"host":"192.168.28.122","port":30380}}}}
+  creationTimestamp: "2026-09-21T09:25:52Z"
+  generation: 2
+  name: video-workload01-to-workload02
+  namespace: default
+  resourceVersion: "46000988"
+  uid: 568b27a1-80ea-4add-abad-187120ed2f0c
+spec:
+  recoveryActions:
+  - restore redis on workload02 from the RecoveryPoint's immutable epoch RDB
+  - verify redis logical position == the RecoveryPoint's position, before starting
+    video
+  - activate the prepared video workload with the epoch's CRI checkpoint image
+  - verify the restored video position == the RecoveryPoint's position
+  - release the restored application and switch service traffic to workload02
+  recoveryGroupRef: video-stream-rg
+  sourceCluster: workload01
+  targetCluster: workload02
+  targetPrereqs:
+    activationPlanWorkload:
+      name: video-session
+      namespace: ramp-demo
+    checkpointStagingPath: /var/lib/kubelet/checkpoints
+    maxReplicationLagBytes: 4096
+    minAllocatableCpuMillis: 2000
+    minAllocatableMemoryMiB: 2048
+    namespace: ramp-demo
+    restoreCapabilityDaemonSet:
+      name: checkpoint-agent
+      namespace: kube-system
+    standbyEndpoint:
+      host: 192.168.28.122
+      port: 30380
+status:
+  candidateRecoveryPoint:
+    commitTime: "2026-09-23T00:31:46Z"
+    epoch: 51
+    logicalPosition: 28585
+    message: a newer committed RecoveryPoint is being prepared; the path keeps recovering
+      from video-stream-rg-epoch-50 until video-stream-rg-epoch-51 is proven executable
+    missingPreparation:
+    - RestoreArtifactReady
+    - ActivationPlanPrepared
+    name: video-stream-rg-epoch-51
+    observedAt: "2026-09-23T00:31:53Z"
+  checks:
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: target workload ramp-demo/video-session exists (replicas=0, state="prepared"),
+      prepared for video-stream-rg-epoch-50 epoch 50, pinned to node workload02-md-0-rx5mn-pjkrh,
+      checkpoint image docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-50
+    name: ActivationPlanPrepared
+    reason: ActivationPlanPrepared
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: estimated activation latency 12s <= RTO 1m0s (failure-time work is activation
+      only)
+    name: EstimatedRTOWithinContract
+    reason: WithinRTO
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: 'prepared RecoveryPoint video-stream-rg-epoch-50: epoch 50 committed
+      at 2026-09-23T00:31:01Z, logical position 28551, cross-driver skew 0'
+    name: RecoveryPointCommitted
+    reason: PreparedAndCommitted
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: video-stream-rg-epoch-50 age 1m23s <= RPO 30m0s (28m37s of freshness
+      remaining)
+    name: RecoveryPointFreshEnough
+    reason: WithinRPO
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: ramp-redis-epoch/video-stream-rg-epoch-50.rdb (326 bytes) frozen at logical
+      position 28551
+    name: RedisEpochArtifactAvailable
+    reason: ArtifactPresent
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: target Redis 192.168.28.122:30380 is up, replicating (ackedOffset=3778330,
+      lastIO=1s); recovery restores the epoch RDB into it, it is not promoted as the
+      recovery point
+    name: RedisTargetRuntimeReady
+    reason: RuntimeWarmAndReplicating
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: checkpoint tar checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:30:56Z.tar
+      and CRI checkpoint image docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-50
+      are both present on node workload02-md-0-rx5mn-pjkrh
+    name: RestoreArtifactReady
+    reason: RestoreArtifactReadyOnNode
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: a ready restore-capability agent is running on the placement node workload02-md-0-rx5mn-pjkrh
+    name: RestoreCapabilityAvailable
+    reason: AgentReadyOnPlacementNode
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: 1/2 evaluated nodes Ready on workload02
+    name: TargetClusterReachable
+    reason: NodesReady
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: namespace "ramp-demo" is Active on workload02
+    name: TargetNamespaceReady
+    reason: NamespaceActive
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: node workload02-md-0-rx5mn-pjkrh on workload02 satisfies every node-level
+      prerequisite at once (allocatable 8000m CPU / 15888MiB, requested 2010m / 824MiB,
+      free 5990m / 15064MiB; required 2000m / 2048MiB) [PreservedPreviousPlacement]
+    name: TargetPlacementFeasible
+    reason: NodeSelected
+    status: "True"
+  - lastProbeTime: "2026-09-23T00:32:24Z"
+    mandatory: true
+    message: checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:30:56Z.tar
+      (10564096 bytes) present in bucket checkpoints
+    name: VideoCheckpointAvailable
+    reason: ArtifactPresent
+    status: "True"
+  conditions:
+  - lastTransitionTime: "2026-09-23T00:32:24Z"
+    message: an executable prepared recovery point exists and currently satisfies
+      both RPO and RTO; failure-time work is activation only
+    observedGeneration: 2
+    reason: ContractSatisfiable
+    status: "True"
+    type: Ready
+  - lastTransitionTime: "2026-09-23T00:32:24Z"
+    message: an executable prepared recovery point exists and currently satisfies
+      both RPO and RTO; failure-time work is activation only
+    observedGeneration: 2
+    reason: ContractSatisfiable
+    status: "True"
+    type: RecoveryFeasible
+  contract:
+    activationSteps:
+    - cost: 1m0s
+      name: ProvisionRedisRuntime
+      reason: target Redis runtime already up and warm
+      required: false
+    - cost: 30s
+      name: StageCheckpointArtifact
+      reason: checkpoint tar present on the placement node
+      required: false
+    - cost: 45s
+      name: BuildCheckpointImage
+      reason: CRI checkpoint image present on the placement node
+      required: false
+    - cost: 25s
+      name: PrepareActivationPlan
+      reason: target workload object and ArgoCD wiring already in place
+      required: false
+    - cost: 3s
+      name: RestoreRedisFromEpochArtifact
+      reason: fetch the epoch RDB, load it, restart, verify the position is P
+      required: true
+    - cost: 2s
+      name: CommitAndSyncActivation
+      reason: one commit switching image and replicas, one sync trigger
+      required: true
+    - cost: 6s
+      name: RestoreContainerFromCheckpoint
+      reason: containerd CRIU restore to pod ready
+      required: true
+    - cost: 1s
+      name: VerifyAndRelease
+      reason: verify the restored position is P, then release the quiesce
+      required: true
+    estimatedActivationLatency: 12s
+    freshEnough: true
+    freshnessRemaining: 28m37s
+    recoveryPointAge: 1m23s
+    rpo: 30m0s
+    rto: 1m0s
+    rtoWithinContract: true
+  estimatedRTO: 12s
+  lastValidatedTime: "2026-09-23T00:32:24Z"
+  latestRecoveryPoint:
+    commitTime: "2026-09-23T00:31:46Z"
+    epoch: 51
+    logicalPosition: 28585
+    name: video-stream-rg-epoch-51
+  observedEpoch: 50
+  observedRecoveryPoint: video-stream-rg-epoch-50
+  preparedRecoveryPoint:
+    artifacts:
+    - checksum: 57018234054a09d2dbb5f140545fb4da6f14be69c87c06ac89dbc599c40f5fcb
+      kind: redisSnapshot
+      message: ramp-redis-epoch/video-stream-rg-epoch-50.rdb (326 bytes) frozen at
+        logical position 28551
+      ref: minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-50.rdb
+      verifiedAt: "2026-09-23T00:32:24Z"
+    - checksum: c82fae1d6e81c972517e3a222cf29138
+      kind: videoCheckpoint
+      message: checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:30:56Z.tar
+        (10564096 bytes) present in bucket checkpoints
+      ref: minio://checkpoints/checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:30:56Z.tar
+      verifiedAt: "2026-09-23T00:32:24Z"
+    - kind: activationPlan
+      message: target workload ramp-demo/video-session exists (replicas=0, state="prepared"),
+        prepared for video-stream-rg-epoch-50 epoch 50, pinned to node workload02-md-0-rx5mn-pjkrh,
+        checkpoint image docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-50
+      node: workload02-md-0-rx5mn-pjkrh
+      ref: docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-50
+      verifiedAt: "2026-09-23T00:32:24Z"
+    - kind: videoCheckpointOnNode
+      message: staged in the kubelet checkpoint directory
+      node: workload02-md-0-rx5mn-pjkrh
+      ref: checkpoint-video-session-5c6684c9b7-l2hbw_ramp-demo-video-2026-09-23T00:30:56Z.tar
+      verifiedAt: "2026-09-23T00:32:24Z"
+    - kind: checkpointImage
+      message: present in the node's containerd image store
+      node: workload02-md-0-rx5mn-pjkrh
+      ref: docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-50
+      verifiedAt: "2026-09-23T00:32:24Z"
+    commitTime: "2026-09-23T00:31:01Z"
+    epoch: 50
+    executable: true
+    logicalPosition: 28551
+    name: video-stream-rg-epoch-50
+    placement:
+      allocatableCpuMillis: 8000
+      allocatableMemoryMiB: 15888
+      cluster: workload02
+      freeCpuMillis: 5990
+      freeMemoryMiB: 15064
+      node: workload02-md-0-rx5mn-pjkrh
+      reason: PreservedPreviousPlacement
+      requestedCpuMillis: 2010
+      requestedMemoryMiB: 824
+      selectedAt: "2026-09-23T00:32:24Z"
+    preparedAt: "2026-09-23T00:31:33Z"
+  readiness: HOT
+  targetPlacement:
+    allocatableCpuMillis: 8000
+    allocatableMemoryMiB: 15888
+    cluster: workload02
+    freeCpuMillis: 5990
+    freeMemoryMiB: 15064
+    node: workload02-md-0-rx5mn-pjkrh
+    reason: PreservedPreviousPlacement
+    requestedCpuMillis: 2010
+    requestedMemoryMiB: 824
+    selectedAt: "2026-09-23T00:32:24Z"

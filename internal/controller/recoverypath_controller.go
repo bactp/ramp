@@ -158,15 +158,108 @@ func (r *RecoveryPathReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// ---- publish -----------------------------------------------------------
+	//
+	// Only when something an operator would act on has changed, or the
+	// heartbeat is due.
+	//
+	// Writing unconditionally is what a readiness controller most obviously
+	// wants to do, and it produces a hot loop: the status carries a handful of
+	// fields that tick on their own (lastValidatedTime, every check's
+	// lastProbeTime, the placement's selectedAt, the prepared point's age), so
+	// every pass differs from the last, every pass writes, every write fires
+	// the watch, and the watch drives the next pass. Measured on this testbed
+	// before the fix: ~1 reconcile per second against a 10 s resync, ~10 status
+	// writes per second, and ~11 conflict errors per minute -- each pass also
+	// listing every node and pod on the target cluster and stat-ing two MinIO
+	// objects. The published values were correct the whole time, which is
+	// exactly why it went unnoticed.
+	prev := path.Status.DeepCopy()
 	status := r.buildStatus(path, rg, rgErr, tc, latest, candidate, candidateEval, prepared, preparedEval)
+
+	unchanged := semanticStatus(&status) == semanticStatus(prev)
+	fresh := prev.LastValidatedTime != nil && time.Since(prev.LastValidatedTime.Time) < statusHeartbeat
+	if unchanged && fresh {
+		return ctrl.Result{RequeueAfter: recoveryPathResyncInterval}, nil
+	}
+
 	path.Status = status
 	if err := r.Status().Update(ctx, path); err != nil {
+		// A conflict means this reconcile read a cached object that another
+		// write has already superseded. It is expected, self-healing and not a
+		// fault: requeue quietly instead of logging it as an error.
+		if apierrors.IsConflict(err) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return ctrl.Result{}, fmt.Errorf("updating RecoveryPath status: %w", err)
 	}
 	log.V(1).Info("evaluated recovery path",
 		"readiness", status.Readiness, "prepared", refName(status.PreparedRecoveryPoint),
 		"candidate", candName(status.CandidateRecoveryPoint), "unmet", status.UnmetMandatoryChecks)
 	return ctrl.Result{RequeueAfter: recoveryPathResyncInterval}, nil
+}
+
+// statusHeartbeat bounds how long the published status may go unrefreshed while
+// nothing changes. It is the staleness of the DISPLAYED recoveryPointAge only:
+// the contract is still evaluated every resync, so a freshness or RTO verdict
+// that flips changes the semantic status and is published immediately.
+const statusHeartbeat = 30 * time.Second
+
+// semanticStatus is the decision-relevant projection of the status: everything
+// an operator or another controller would act on, and none of the fields that
+// advance on their own. Timestamps, the prepared point's age and the remaining
+// freshness are deliberately excluded -- they are how the status describes the
+// verdict, not the verdict.
+func semanticStatus(s *rampv1alpha1.RecoveryPathStatus) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "readiness=%s;unmet=%s;", s.Readiness, strings.Join(s.UnmetMandatoryChecks, ","))
+	fmt.Fprintf(&b, "latest=%s;candidate=%s;", refOrEmpty(s.LatestRecoveryPoint), candName(s.CandidateRecoveryPoint))
+	if p := s.PreparedRecoveryPoint; p != nil {
+		fmt.Fprintf(&b, "prepared=%s/%d/exec=%t;", p.Name, p.Epoch, p.Executable)
+		for _, a := range p.Artifacts {
+			fmt.Fprintf(&b, "art=%s|%s|%s;", a.Kind, a.Ref, a.Node)
+		}
+	} else {
+		b.WriteString("prepared=<none>;")
+	}
+	if c := s.CandidateRecoveryPoint; c != nil {
+		fmt.Fprintf(&b, "candMissing=%s;", strings.Join(c.MissingPreparation, ","))
+	}
+	if p := s.TargetPlacement; p != nil {
+		// Free capacity is excluded on purpose: it moves whenever any unrelated
+		// pod is scheduled on the node, and the verdict is "this node is
+		// feasible", not "it has exactly this much room".
+		fmt.Fprintf(&b, "place=%s/%s/%s;", p.Cluster, p.Node, p.Reason)
+	}
+	fmt.Fprintf(&b, "contract=%s/%s/%t/%s/%t;", s.Contract.RPO, s.Contract.RTO, s.Contract.FreshEnough,
+		s.Contract.EstimatedActivationLatency, s.Contract.RTOWithinContract)
+	for _, st := range s.Contract.ActivationSteps {
+		fmt.Fprintf(&b, "step=%s|%t;", st.Name, st.Required)
+	}
+	// (name, status, reason) and NOT the message. Reasons are the stable,
+	// enumerable verdict -- RecoveryPointStale vs WithinRPO,
+	// CheckpointImageMissingOnNode vs RestoreArtifactReadyOnNode -- while
+	// messages carry live detail that moves on its own: the prepared point's
+	// age counts up every second and the target Redis offset advances with
+	// every application tick. Including messages made every pass differ and put
+	// the write rate back at ~1/s with nothing having changed.
+	//
+	// Consequence, accepted deliberately: two situations that share a reason but
+	// differ only in message are published on the heartbeat rather than
+	// immediately. No verdict is ever delayed by it.
+	for _, c := range s.Checks {
+		fmt.Fprintf(&b, "check=%s|%s|%s;", c.Name, c.Status, c.Reason)
+	}
+	for _, c := range s.Conditions {
+		fmt.Fprintf(&b, "cond=%s|%s|%s;", c.Type, c.Status, c.Reason)
+	}
+	return b.String()
+}
+
+func refOrEmpty(r *rampv1alpha1.RecoveryPointRef) string {
+	if r == nil {
+		return "<none>"
+	}
+	return r.Name
 }
 
 // eligiblePoints returns the committed+validated RecoveryPoints for this path's

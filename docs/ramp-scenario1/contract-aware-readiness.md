@@ -260,3 +260,53 @@ for a removed artifact.
 `99-readiness-stability.sh` samples the path every 5 s for 3 minutes — several
 probe generations — and fails if a prepared, fresh, fully-staged path leaves HOT
 even once.
+
+## 9. Publishing: the status is written on change, not on every pass
+
+A readiness controller re-evaluates on a timer and the obvious thing to do with
+the result is write it. That produces a hot loop, because a readiness status
+contains several fields that advance on their own: `lastValidatedTime`, every
+check's `lastProbeTime`, the placement's `selectedAt`, the prepared point's age,
+and — in the free-text messages — the target Redis replication offset. Every
+pass therefore differs from the last, every pass writes, every write fires the
+object's own watch, and the watch drives the next pass.
+
+Measured on this testbed before the fix, with a 10 s resync configured:
+
+| | before | after |
+| --- | --- | --- |
+| status writes | ~1150 per 2 min (~10/s) | 4 per 2 min (the heartbeat floor) |
+| reconciles | 644 per 10 min | ~12 per 2 min (the resync) |
+| conflict errors | ~21 per 2 min | 0 |
+
+Each of those reconciles also listed every node and every pod on the target
+cluster and stat-ed two MinIO objects, so the cost was not confined to etcd. The
+published *values* were correct throughout, which is why it survived a full test
+suite unnoticed — the tests asserted what the status said, never how often it
+said it.
+
+The publish step now compares a **semantic projection** of the status against
+what is already published, and writes only on a real change or when the 30 s
+heartbeat is due. The projection covers readiness, unmet checks, the latest /
+candidate / prepared references, prepared artifacts and their nodes, placement,
+the contract verdicts and the activation-step breakdown, and each check's
+`(name, status, reason)`.
+
+Two exclusions are deliberate:
+
+* **check messages** — reasons are the stable, enumerable verdict
+  (`RecoveryPointStale` vs `WithinRPO`); messages carry live detail that moves
+  on its own.
+* **`recoveryPointAge` and `freshnessRemaining`** — they tick every second, and
+  they describe the verdict rather than being it. `freshEnough` *is* in the
+  projection, so the True → False transition is still published on the reconcile
+  that observes it.
+
+Consequences, accepted deliberately: the displayed age can lag by up to the
+heartbeat, and a change visible only in a message waits for the heartbeat. No
+verdict is ever delayed — the worst case for any decision is one resync
+interval.
+
+A status write that conflicts is requeued quietly instead of being logged as an
+error: it means this reconcile read a cached object a later write had already
+superseded, which is expected and self-healing.

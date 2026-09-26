@@ -1,0 +1,11 @@
+restoring redis from epoch=56 position=28870 artifact=minio://checkpoints/ramp-redis-epoch/video-stream-rg-epoch-56.rdb
+T_redis_restore_start=2026-09-23T00:38:34+00:00
+wrote 488 bytes of checkpoints/ramp-redis-epoch/video-stream-rg-epoch-56.rdb to /home/ubuntu/ramp/evidence/recovery-epoch-qgtp-20260923T003708/redis-epoch-56.rdb
+-rw-------    1 redis    redis          488 Sep 23 00:38 /data/dump.rdb
+T_redis_ready=2026-09-23T00:38:36+00:00
+redis_role=master
+redis_restored_position=28870
+recovery_point_position=28870
+epoch_marker_ramp:epoch:56:position=28870
+epoch_marker_ramp:epoch=56
+REDIS RESTORED TO EPOCH 56 POSITION 28870 (verified before any application write)

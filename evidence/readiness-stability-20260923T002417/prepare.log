@@ -1,0 +1,35 @@
+preparing video-workload01-to-workload02 for video-stream-rg-epoch-48 (epoch 48) on node workload02-md-0-rx5mn-pjkrh
+T_prepare_start=2026-09-23T00:24:17+00:00
+--- 1/3 staging the checkpoint artifact ---
+T_stage_start=2026-09-23T00:24:17+00:00
+staging checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar (bucket checkpoints) onto workload02 node workload02-md-0-rx5mn-pjkrh:/var/lib/kubelet/checkpoints
+job.batch/ramp-stage-checkpoint-v-4beb738a created
+job.batch/ramp-stage-checkpoint-v-4beb738a condition met
+already staged: /staging/checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar (10477056 bytes)
+T_stage_complete=2026-09-23T00:24:23+00:00
+--- 2/3 building the CRI checkpoint image on workload02-md-0-rx5mn-pjkrh ---
+building docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-48 from checkpoint-video-session-5c6684c9b7-x5hwh_ramp-demo-video-2026-09-22T16:25:31Z.tar on workload02-md-0-rx5mn-pjkrh
+  rewrote rootfs fields -> name=docker.io/library/python:3.12-slim ref=docker.io/library/python:3.12-slim
+built OCI checkpoint image archive: /tmp/ramp-ckptimg-ap4psmn3/image.tar (layer 2.7 MB)
+  rootfsImageName = docker.io/library/python:3.12-slim
+  container.name  = docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-48
+docker.io/ramp/checkpoint video session:	saved	
+application/vnd.oci.image.manifest.v1+json sha256:cb6aeffc1bd094e6b4e79dde3bf9440a58ea044b263d62c49ab6b2b3d74f494f
+Importing	elapsed: 0.2 s	total:   0.0 B	(0.0 B/s)
+imported docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-48
+checkpoint image: docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-48
+--- 3/3 preparing the activation plan ---
+T_prepare_start=2026-09-23T00:24:30+00:00
+  updated dr:workload02-dr/video-session/deployment.yaml @ b962b71ae882
+  updated dr:workload02-dr/video-session/svc.yaml @ 54396592d71b
+NAME            SYNC STATUS   HEALTH STATUS
+workload02-dr   Synced        Healthy
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/video-session   0/0     0            0           18h
+
+NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/video-session   NodePort   10.97.18.100   <none>        8080:30808/TCP   18h
+T_prepare_complete=2026-09-23T00:24:33+00:00
+activation plan prepared for: video-stream-rg-epoch-48 (expected video-stream-rg-epoch-48)
+T_prepare_complete=2026-09-23T00:24:33+00:00
+CKPT_IMAGE=docker.io/ramp/checkpoint-video-session:video-stream-rg-epoch-48

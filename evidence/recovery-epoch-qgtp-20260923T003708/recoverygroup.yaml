@@ -1,0 +1,79 @@
+apiVersion: ramp.dcn.ssu.ac.kr/v1alpha1
+kind: RecoveryGroup
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ramp.dcn.ssu.ac.kr/v1alpha1","kind":"RecoveryGroup","metadata":{"annotations":{},"name":"video-stream-rg","namespace":"default"},"spec":{"appBundleRef":{"cluster":"workload01","name":"video-stream-service","namespace":"ramp-demo"},"members":[{"componentRef":{"component":"redis","group":"data"},"consistencyKeys":["ramp:video:position"],"name":"redis","recoveryDriver":"redis-replication","sourceEndpoint":{"host":"192.168.28.238","port":30379}},{"componentRef":{"component":"video","group":"streaming"},"container":"video","name":"video","recoveryDriver":"container-checkpoint"}],"recoveryContract":{"rpo":"30m","rto":"60s"}}}
+  creationTimestamp: "2026-09-21T09:25:52Z"
+  generation: 19
+  name: video-stream-rg
+  namespace: default
+  resourceVersion: "46003334"
+  uid: 68c4fea8-04a9-46b6-ac60-3a7cd8181a0a
+spec:
+  appBundleRef:
+    cluster: workload01
+    name: video-stream-service
+    namespace: ramp-demo
+  members:
+  - componentRef:
+      component: redis
+      group: data
+    consistencyKeys:
+    - ramp:video:position
+    name: redis
+    recoveryDriver: redis-replication
+    sourceEndpoint:
+      host: 192.168.28.238
+      port: 30379
+  - componentRef:
+      component: video
+      group: streaming
+    container: video
+    name: video
+    recoveryDriver: container-checkpoint
+  recoveryContract:
+    rpo: 30m
+    rto: 1m0s
+status:
+  conditions:
+  - lastTransitionTime: "2026-09-22T16:28:52Z"
+    message: 2 members resolved through AppBundle ramp-demo/video-stream-service
+    observedGeneration: 19
+    reason: AllMembersResolved
+    status: "True"
+    type: MembersResolved
+  - lastTransitionTime: "2026-09-21T09:27:35Z"
+    message: epoch 51 committed and validated
+    observedGeneration: 19
+    reason: Committed
+    status: "True"
+    type: RecoveryPointAvailable
+  latestEpoch: 55
+  latestRecoveryPoint: video-stream-rg-epoch-51
+  latestRecoveryPointTime: "2026-09-23T00:31:46Z"
+  members:
+  - apiVersion: apps/v1
+    driverReady: true
+    kind: Deployment
+    message: role=master offset=3810579 replicas=1 logicalPosition=28860
+    name: redis
+    namespace: ramp-demo
+    nodeName: workload01-md-0-4qfvd-gnqcb
+    podName: redis-primary-579fc4d97c-cdsf4
+    recoveryDriver: redis-replication
+    resolved: true
+    resourceName: redis-primary
+  - apiVersion: apps/v1
+    driverReady: true
+    kind: Deployment
+    message: checkpointable container "video" on node workload01-md-0-4qfvd-gnqcb
+    name: video
+    namespace: ramp-demo
+    nodeName: workload01-md-0-4qfvd-gnqcb
+    podName: video-session-5c6684c9b7-l2hbw
+    recoveryDriver: container-checkpoint
+    resolved: true
+    resourceName: video-session
+  observedGeneration: 19
+  phase: Resolved

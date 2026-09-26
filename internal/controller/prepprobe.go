@@ -148,10 +148,11 @@ func (r *RecoveryPathReconciler) probeRestoreArtifact(
 			res.reason = "ProbeInconclusive"
 			res.message = fmt.Sprintf("probe %s/%s exited %d on node %s", ns, name, code, node)
 		}
-		if pod.Status.StartTime != nil {
-			age := time.Since(pod.Status.StartTime.Time).Round(time.Second)
-			res.message += fmt.Sprintf(" (measured %s ago)", age)
-		}
+		// The measurement time is NOT appended to the message. It belongs on the
+		// check's lastProbeTime and the artifact's verifiedAt, which already
+		// carry it -- and a value that ticks every second inside a message makes
+		// the status differ on every pass, which is precisely what drives the
+		// write loop the publish step exists to avoid.
 		return res
 	}
 }

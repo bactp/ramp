@@ -25,15 +25,36 @@ K(){ kubectl --kubeconfig "$MGMT" "$@"; }
 jp(){ K get recoverypath "$PATH_NAME" -o jsonpath="$1" 2>/dev/null; }
 
 # Make sure there is something to be stable ABOUT.
-PREP=$(jp '{.status.preparedRecoveryPoint.name}')
-if [ -z "$PREP" ] || [ "$(jp '{.status.readiness}')" != "HOT" ]; then
-  LATEST=$(jp '{.status.latestRecoveryPoint.name}')
-  if [ -z "$LATEST" ]; then
-    ./20-run-epoch.sh video-stream-rg default > "$OUT/epoch.log" 2>&1 || { echo "epoch failed"; exit 1; }
-    LATEST=$(awk -F= '/^recovery_point=/{print $2}' "$OUT/epoch.log" | tail -1)
-  fi
-  RP="$LATEST" ./36-prepare-target.sh > "$OUT/prepare.log" 2>&1 || { echo "preparation failed"; tail -20 "$OUT/prepare.log"; exit 1; }
+#
+# "Not HOT" is NOT the same as "not prepared". A path can be fully prepared and
+# still not HOT because its prepared point has outlived the RPO -- freshness and
+# preparation are separate dimensions, which is exactly what this system is
+# built to distinguish. An earlier version of this setup re-prepared whatever
+# the latest committed point was; when that point was hours old it re-prepared a
+# stale one, waited for a HOT that could never arrive, and then sampled 36
+# useless rows. Preparation cannot fix staleness: only a NEW epoch can.
+if [ "$(jp '{.status.readiness}')" != "HOT" ]; then
+  echo "path is $(jp '{.status.readiness}'); creating and preparing a fresh RecoveryPoint"
+  ./20-run-epoch.sh video-stream-rg default > "$OUT/epoch.log" 2>&1 || {
+    echo "epoch failed"; tail -20 "$OUT/epoch.log"; exit 1; }
+  RP=$(awk -F= '/^recovery_point=/{print $2}' "$OUT/epoch.log" | tail -1)
+  [ -n "$RP" ] || { echo "could not determine the epoch just created"; exit 1; }
+  echo "prepared point will be: $RP"
+  RP="$RP" ./36-prepare-target.sh > "$OUT/prepare.log" 2>&1 || {
+    echo "preparation failed"; tail -20 "$OUT/prepare.log"; exit 1; }
   for _ in $(seq 1 60); do [ "$(jp '{.status.readiness}')" = "HOT" ] && break; sleep 3; done
+fi
+
+if [ "$(jp '{.status.readiness}')" != "HOT" ]; then
+  # Fail on the precondition, with the reason, rather than sampling a state the
+  # test cannot say anything useful about.
+  echo "FATAL: the path did not reach HOT, so stability cannot be measured."
+  echo "unmet: $(jp '{.status.unmetMandatoryChecks}')"
+  K get recoverypath "$PATH_NAME" -o json | python3 -c "
+import json,sys
+for c in json.load(sys.stdin)['status'].get('checks',[]):
+    if c['status'] != 'True': print('  %s: %s' % (c['name'], c['message']))" | tee "$OUT/precondition-failure.txt"
+  exit 1
 fi
 
 echo "sampling $PATH_NAME every ${INTERVAL}s x $SAMPLES" | tee "$OUT/samples.txt"
